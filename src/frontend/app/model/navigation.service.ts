@@ -62,6 +62,8 @@ export class NavigationService {
             return this.router.navigate(['albums']);
           case NavigationLinkTypes.faces:
             return this.router.navigate(['faces']);
+          case NavigationLinkTypes.timeline:
+            return this.router.navigate(['timeline']);
           case NavigationLinkTypes.search:
             // a search link without a query has nowhere to go, fall back to the gallery
             if (Config.Gallery.NavBar.links[0].SearchQuery) {
