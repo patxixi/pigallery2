@@ -14,6 +14,7 @@ import { DuplicateComponent } from './ui/duplicates/duplicates.component';
 import { FacesComponent } from './ui/faces/faces.component';
 import { AuthGuard } from './model/network/helper/auth.guard';
 import { AlbumsComponent } from './ui/albums/albums.component';
+import { TimelineComponent } from './ui/timeline/timeline.component';
 
 export function galleryMatcherFunction(
   segments: UrlSegment[]
@@ -76,6 +77,11 @@ const routes: Routes = [
   {
     path: 'albums',
     component: AlbumsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'timeline',
+    component: TimelineComponent,
     canActivate: [AuthGuard],
   },
   {
