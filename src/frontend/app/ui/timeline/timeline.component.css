@@ -2,6 +2,23 @@
   padding: 0 2px; /* the scrubber is drawn over the photos */
 }
 
+.timeline-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 0;
+  font-size: 1.1rem;
+}
+
+.timeline-filter .filter-name {
+  font-weight: 500;
+}
+
+.timeline-filter .filter-close {
+  margin-left: auto;
+  margin-right: 44px; /* not under the scrubber */
+}
+
 .timeline-msg {
   text-align: center;
   padding: 3rem 1rem;

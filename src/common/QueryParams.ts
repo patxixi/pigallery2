@@ -16,6 +16,9 @@ export const QueryParams = {
     map: {
       show: 'map'
     },
+    timeline: {
+      query: 'q', // search query filtering the timeline (e.g. a person)
+    },
     photo: 'p',
     sharingKey_query: 'sk',
     sharingKey_params: 'sharingKey',
