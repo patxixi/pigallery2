@@ -17,6 +17,7 @@ import {DiskManager} from '../fileaccess/DiskManager';
 import {SessionContext} from '../SessionContext';
 import {FileEntity} from './enitites/FileEntity';
 import {TimelineDTO} from '../../../common/entities/TimelineDTO';
+import {SearchQueryDTO} from '../../../common/entities/SearchQueryDTO';
 
 const LOG_TAG = '[GalleryManager]';
 
@@ -305,11 +306,12 @@ export class GalleryManager {
   }
 
   /**
-   * Number of media per day, newest first, for the timeline view.
+   * Number of media per day, newest first, for the timeline view,
+   * optionally limited to the media matching a search query (e.g. a person).
    * Only the creation dates are read; counting is done here so it works
    * the same on every database.
    */
-  async getTimeline(session: SessionContext): Promise<TimelineDTO> {
+  async getTimeline(session: SessionContext, query?: SearchQueryDTO): Promise<TimelineDTO> {
     const connection = await SQLConnection.getConnection();
     const qb = connection
       .getRepository(MediaEntity)
@@ -318,7 +320,10 @@ export class GalleryManager {
       .select('media.metadata.creationDate', 'date')
       .addSelect('media.metadata.creationDateOffset', 'offset');
     if (session?.projectionQuery) {
-      qb.where(session.projectionQuery);
+      qb.andWhere(session.projectionQuery);
+    }
+    if (query) {
+      qb.andWhere(await ObjectManagers.getInstance().SearchManager.prepareAndBuildWhereQuery(query));
     }
     const rows: { date: number | string, offset: number | string }[] = await qb.getRawMany();
     const counts = new Map<string, number>();

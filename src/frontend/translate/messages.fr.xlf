@@ -7467,6 +7467,14 @@
         <source>No photos yet.</source>
         <target>Aucune photo pour le moment.</target>
       </trans-unit>
+      <trans-unit id="5192629931973994331" datatype="html">
+        <source>photos</source>
+        <target>photos</target>
+      </trans-unit>
+      <trans-unit id="4544917522629245219" datatype="html">
+        <source>Whole timeline</source>
+        <target>Toute la timeline</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

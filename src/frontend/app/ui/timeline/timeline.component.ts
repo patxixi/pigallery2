@@ -10,7 +10,8 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import {Router} from '@angular/router';
+import {ActivatedRoute, ParamMap, Router, RouterLink} from '@angular/router';
+import {Subscription} from 'rxjs';
 import {NgFor, NgIf} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
 import {FrameComponent} from '../frame/frame.component';
@@ -22,6 +23,9 @@ import {QueryParams} from '../../../../common/QueryParams';
 import {PageHelper} from '../../model/page.helper';
 import {PiTitleService} from '../../model/pi-title.service';
 import {LightboxService} from '../gallery/lightbox/lightbox.service';
+import {SearchQueryDTO, SearchQueryTypes, TextSearch} from '../../../../common/entities/SearchQueryDTO';
+import {SearchQueryUtils} from '../../../../common/SearchQueryUtils';
+import {SearchQueryParser} from '../../../../common/SearchQueryParser';
 
 interface Tile {
   media: MediaDTO;
@@ -65,7 +69,7 @@ interface YearMark {
   selector: 'app-timeline',
   templateUrl: './timeline.component.html',
   styleUrls: ['./timeline.component.css'],
-  imports: [FrameComponent, NgFor, NgIf, NgIconComponent],
+  imports: [FrameComponent, NgFor, NgIf, NgIconComponent, RouterLink],
 })
 export class TimelineComponent implements OnInit, OnDestroy {
   @ViewChild('container', {static: true}) container: ElementRef<HTMLElement>;
@@ -84,6 +88,11 @@ export class TimelineComponent implements OnInit, OnDestroy {
   public columns = 4;
   public loading = true;
   public error: string = null;
+  /** Optional search filter (?q=, e.g. a person), shown above the timeline. */
+  public filter: SearchQueryDTO = null;
+  public filterLabel = '';
+  public filterIsPerson = false;
+  public totalCount = '';
 
   // scrubber
   public years: YearMark[] = [];
@@ -100,12 +109,14 @@ export class TimelineComponent implements OnInit, OnDestroy {
   private readonly requested = new Set<string>();
   private readonly monthFormat: Intl.DateTimeFormat;
   private readonly dayFormat: Intl.DateTimeFormat;
+  private readonly numberFormat: Intl.NumberFormat;
   private readonly onScroll = (): void => this.scheduleUpdate();
   private readonly onPageHide = (): void => {
-    this.timelineService.scrollY = PageHelper.ScrollY;
+    this.timelineService.setScrollY(PageHelper.ScrollY, this.filter);
   };
   private updateScheduled = false;
-  private readonly restoreScroll: boolean;
+  private restoreScroll: boolean;
+  private routeSubscription: Subscription = null;
 
   constructor(
     private timelineService: TimelineService,
@@ -114,6 +125,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     private cd: ChangeDetectorRef,
     private piTitleService: PiTitleService,
     private lightboxService: LightboxService,
+    private route: ActivatedRoute,
     @Inject(LOCALE_ID) locale: string
   ) {
     // Same place as before only when coming back (lightbox closed, browser
@@ -123,30 +135,55 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.restoreScroll = nav?.trigger === 'popstate' || (nav?.id === 1 && reload);
     this.monthFormat = new Intl.DateTimeFormat(locale, {month: 'long', year: 'numeric', timeZone: 'UTC'});
     this.dayFormat = new Intl.DateTimeFormat(locale, {weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC'});
+    this.numberFormat = new Intl.NumberFormat(locale);
   }
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.piTitleService.setTitle($localize`Timeline`);
     this.lightboxService.backOnCloseUrl = null;
     this.zone.runOutsideAngular(() => window.addEventListener('scroll', this.onScroll, {passive: true}));
     window.addEventListener('pagehide', this.onPageHide);
+    // The same component shows every filter: reload when ?q= changes.
+    this.routeSubscription = this.route.queryParamMap.subscribe((params: ParamMap) => {
+      this.show(SearchQueryUtils.parseURLifiedQuery(params.get(QueryParams.gallery.timeline.query)))
+        .catch(console.error);
+    });
+  }
+
+  private async show(filter: SearchQueryDTO): Promise<void> {
+    if (this.dayCounts.length && JSON.stringify(filter) !== JSON.stringify(this.filter)) {
+      this.restoreScroll = false; // another person: from the top
+    }
+    this.filter = filter;
+    this.filterIsPerson = filter?.type === SearchQueryTypes.person;
+    this.filterLabel = !filter ? '' : this.filterIsPerson ? (filter as TextSearch).value : new SearchQueryParser().stringify(filter);
+    this.piTitleService.setTitle(this.filterLabel || $localize`Timeline`);
+    this.loading = true;
+    this.error = null;
+    this.months = [];
+    this.visibleMonths = [];
+    this.dayCounts = [];
+    this.totalHeight = 0;
     try {
-      this.dayCounts = (await this.timelineService.getDays()).days;
+      this.dayCounts = (await this.timelineService.getDays(filter)).days;
     } catch (e) {
       this.error = '' + (e?.message || e);
       this.loading = false;
       return;
     }
+    this.totalCount = this.numberFormat.format(this.dayCounts.reduce((n, d) => n + d[1], 0));
     this.loading = false;
     this.layout();
     this.cd.detectChanges();
-    PageHelper.ScrollY = this.restoreScroll ? this.timelineService.scrollY : 0;
+    PageHelper.ScrollY = this.restoreScroll ? this.timelineService.getScrollY(filter) : 0;
+    this.restoreScroll = false;
     this.update();
   }
 
   ngOnDestroy(): void {
     window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('pagehide', this.onPageHide);
+    this.routeSubscription?.unsubscribe();
     if (this.scrubberTimer) {
       clearTimeout(this.scrubberTimer);
     }
@@ -213,7 +250,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     // Thumbnail sizes depend on the tile size: rebuild the loaded months.
     for (const m of this.months) {
       if (old.get(m.month)?.loaded) {
-        this.timelineService.getMonth(m.month).then(media => this.fill(m, media)).catch(console.error);
+        this.timelineService.getMonth(m.month, this.filter).then(media => this.fill(m, media)).catch(console.error);
       }
     }
     this.layoutScrubber();
@@ -308,8 +345,13 @@ export class TimelineComponent implements OnInit, OnDestroy {
 
   private load(m: MonthBlock): void {
     this.requested.add(m.month);
-    this.timelineService.getMonth(m.month)
-      .then(media => this.zone.run(() => this.fill(m, media)))
+    const filter = this.filter;
+    this.timelineService.getMonth(m.month, filter)
+      .then(media => this.zone.run(() => {
+        if (filter === this.filter) { // not a stale answer for another filter
+          this.fill(m, media);
+        }
+      }))
       .catch(console.error)
       .finally(() => this.requested.delete(m.month));
   }
@@ -353,8 +395,8 @@ export class TimelineComponent implements OnInit, OnDestroy {
 
   public open(m: MonthBlock, tile: Tile): void {
     const media = tile.media;
-    this.timelineService.scrollY = PageHelper.ScrollY;
-    const query = JSON.stringify(TimelineService.monthQuery(m.month));
+    this.timelineService.setScrollY(PageHelper.ScrollY, this.filter);
+    const query = JSON.stringify(TimelineService.monthQuery(m.month, this.filter));
     this.lightboxService.backOnCloseUrl = '/search/' + query;
     this.router.navigate(['/search', query], {
       queryParams: {

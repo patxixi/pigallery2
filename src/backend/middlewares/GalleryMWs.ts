@@ -329,7 +329,19 @@ export class GalleryMWs {
     next: NextFunction
   ): Promise<void> {
     try {
-      req.resultPipe = await ObjectManagers.getInstance().GalleryManager.getTimeline(req.session.context);
+      // Optional filter (?q=<search query JSON>), e.g. the photos of a person.
+      let query: SearchQueryDTO = null;
+      if (req.query[QueryParams.gallery.timeline.query]) {
+        try {
+          query = JSON.parse(req.query[QueryParams.gallery.timeline.query] as string);
+        } catch (e) {
+          return next(new ErrorDTO(ErrorCodes.INPUT_ERROR, 'Invalid timeline query JSON: ' + e.message, e));
+        }
+      }
+      if (query && Config.Search.enabled === false) {
+        return next(new ErrorDTO(ErrorCodes.INPUT_ERROR, 'Search is disabled'));
+      }
+      req.resultPipe = await ObjectManagers.getInstance().GalleryManager.getTimeline(req.session.context, query);
       return next();
     } catch (err) {
       return next(
