@@ -1,5 +1,12 @@
 <app-frame>
   <div body class="timeline-body">
+    <div *ngIf="filter" class="timeline-filter">
+      <ng-icon [name]="filterIsPerson ? 'ionPersonOutline' : 'ionSearchOutline'"></ng-icon>
+      <span class="filter-name">{{ filterLabel }}</span>
+      <span *ngIf="!loading" class="text-secondary">· {{ totalCount }} <ng-container i18n>photos</ng-container></span>
+      <a class="filter-close btn btn-sm btn-outline-secondary" [routerLink]="['/timeline']"
+         title="Whole timeline" i18n-title>✕</a>
+    </div>
     <div *ngIf="loading" class="timeline-msg text-secondary" i18n>Loading…</div>
     <div *ngIf="error" class="timeline-msg text-danger">{{ error }}</div>
     <div *ngIf="!loading && !error && months.length === 0" class="timeline-msg text-secondary" i18n>No photos yet.</div>
