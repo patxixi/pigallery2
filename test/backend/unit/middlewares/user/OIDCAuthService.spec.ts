@@ -52,6 +52,15 @@ describe('OIDCAuthService', () => {
       expect(OIDCAuthService.selectIdTokenAlg(['ES256', 'PS256'])).to.equal('ES256');
       expect(OIDCAuthService.selectIdTokenAlg(['HS256'])).to.equal('HS256');
     });
+
+    it('should use the configured algorithm even if the provider advertises RS256', () => {
+      expect(OIDCAuthService.selectIdTokenAlg(['RS256', 'PS256'], 'PS256')).to.equal('PS256');
+      expect(OIDCAuthService.selectIdTokenAlg(undefined, ' ES256 ')).to.equal('ES256');
+    });
+
+    it('should ignore an empty configured algorithm', () => {
+      expect(OIDCAuthService.selectIdTokenAlg(['RS256', 'PS256'], '')).to.equal('RS256');
+    });
   });
 
   describe('getClient', () => {

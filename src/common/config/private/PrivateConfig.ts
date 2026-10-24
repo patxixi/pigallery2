@@ -344,6 +344,19 @@ export class ServerUserOIDCConfig extends ClientUserOIDCConfig {
 
   @ConfigProperty({
     tags: {
+      name: $localize`ID token signing algorithm`,
+      uiOptional: true,
+      relevant: (c: any) => c.enabled,
+      priority: ConfigPriority.underTheHood,
+      uiResetNeeded: {server: true},
+      hint: 'PS256'
+    } as TAGS,
+    description: $localize`Algorithm the provider signs ID tokens with (e.g.: PS256). Leave empty to pick it from the provider's discovery document.`
+  })
+  idTokenSignedResponseAlg: string = '';
+
+  @ConfigProperty({
+    tags: {
       name: $localize`Username claim`,
       relevant: (c: any) => c.enabled,
       priority: ConfigPriority.advanced

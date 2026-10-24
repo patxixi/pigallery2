@@ -83,10 +83,15 @@ export class OIDCAuthService {
   }
 
   /**
-   * Prefers RS256 (openid-client default) if the provider supports it,
-   * otherwise the first algorithm the provider advertises (e.g.: PS256, ES256).
+   * The configured algorithm wins: some providers (e.g.: LibreGraph Connect of
+   * OpenCloud/oCIS) advertise RS256 but sign ID tokens with PS256.
+   * Otherwise prefers RS256 (openid-client default) if the provider supports it,
+   * else the first algorithm the provider advertises (e.g.: PS256, ES256).
    */
-  public static selectIdTokenAlg(supported?: string[]): string {
+  public static selectIdTokenAlg(supported?: string[], configured?: string): string {
+    if (configured && configured.trim()) {
+      return configured.trim();
+    }
     if (!supported || supported.length === 0 || supported.includes('RS256')) {
       return 'RS256';
     }
@@ -135,7 +140,8 @@ export class OIDCAuthService {
         client_secret: Config.Users.oidc.clientSecret,
         redirect_uris: [Config.Users.oidc.redirectUri],
         response_types: ['code'],
-        id_token_signed_response_alg: this.selectIdTokenAlg(issuer.metadata.id_token_signing_alg_values_supported as string[])
+        id_token_signed_response_alg: this.selectIdTokenAlg(issuer.metadata.id_token_signing_alg_values_supported as string[],
+          Config.Users.oidc.idTokenSignedResponseAlg)
       });
     })();
     return this.clientPromise;
