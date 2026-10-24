@@ -155,3 +155,22 @@
 .scrubber.dragging .bubble {
   display: block;
 }
+
+.tile.selected {
+  outline: 4px solid var(--bs-primary, #1c7ed6);
+  outline-offset: -4px;
+}
+
+.tile.selected::after {
+  content: "✓";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bs-primary, #1c7ed6);
+  color: #fff;
+  font: bold 16px/24px system-ui, sans-serif;
+  text-align: center;
+}

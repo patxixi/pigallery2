@@ -74,3 +74,7 @@
 
 <!-- Media button modal (gallery-wide) -->
 <app-media-button-modal></app-media-button-modal>
+
+<!-- Selection mode (several photos or folders at once) -->
+<app-selection-bar [selectAllSource]="selectAllSource"
+                   (changed)="contentLoader.reloadCurrentContent()"></app-selection-bar>

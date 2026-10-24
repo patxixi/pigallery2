@@ -1,3 +1,6 @@
+import {SelectionService} from '../gallery/selection/selection.service';
+import {SelectionBarComponent} from '../gallery/selection/selection-bar.component';
+import {MediaButtonModalComponent} from '../gallery/grid/photo/media-button-modal/media-button-modal.component';
 import {
   ChangeDetectorRef,
   Component,
@@ -69,7 +72,7 @@ interface YearMark {
   selector: 'app-timeline',
   templateUrl: './timeline.component.html',
   styleUrls: ['./timeline.component.css'],
-  imports: [FrameComponent, NgFor, NgIf, NgIconComponent, RouterLink],
+  imports: [FrameComponent, NgFor, NgIf, NgIconComponent, RouterLink, SelectionBarComponent, MediaButtonModalComponent],
 })
 export class TimelineComponent implements OnInit, OnDestroy {
   @ViewChild('container', {static: true}) container: ElementRef<HTMLElement>;
@@ -126,6 +129,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     private piTitleService: PiTitleService,
     private lightboxService: LightboxService,
     private route: ActivatedRoute,
+    public selection: SelectionService,
     @Inject(LOCALE_ID) locale: string
   ) {
     // Same place as before only when coming back (lightbox closed, browser
@@ -393,8 +397,21 @@ export class TimelineComponent implements OnInit, OnDestroy {
     return Array.from({length: d.tiles ? 0 : d.count}, (_, i) => i);
   }
 
+  /**
+   * After a bulk action: the timeline caches days and months, a reload is the simplest
+   * way to show the change (the scroll position is kept across a reload).
+   */
+  public reloadPage(): void {
+    this.timelineService.setScrollY(PageHelper.ScrollY, this.filter);
+    window.location.reload();
+  }
+
   public open(m: MonthBlock, tile: Tile): void {
     const media = tile.media;
+    if (this.selection.active) {
+      this.selection.toggleMedia(media);
+      return;
+    }
     this.timelineService.setScrollY(PageHelper.ScrollY, this.filter);
     const query = JSON.stringify(TimelineService.monthQuery(m.month, this.filter));
     this.lightboxService.backOnCloseUrl = '/search/' + query;

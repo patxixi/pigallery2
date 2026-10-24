@@ -60,6 +60,9 @@ export class MediaButtonModalComponent implements OnInit, OnDestroy {
     }
 
     const media = this.modalData.media;
+    if (!media) {
+      return ''; // selection mode: no single media to read from
+    }
     const metadata = media.media.metadata;
 
     switch (field) {
@@ -104,6 +107,12 @@ export class MediaButtonModalComponent implements OnInit, OnDestroy {
             this.modalService.setValue(field.id, this.formData.customFields[field.id]);
           }
         });
+      }
+      if (this.modalData.onSubmit) {
+        const onSubmit = this.modalData.onSubmit;
+        this.modalService.hideModal();
+        onSubmit(this.formData).catch(console.error);
+        return;
       }
       this.modalService.executeButtonAction(
         this.modalData.button,

@@ -11,7 +11,7 @@
       <div class="modal-body">
         <!-- Media info -->
         <div class="media-info mb-3">
-          <strong>Media:</strong> {{ modalData.media.media.name }}
+          <strong>Media:</strong> {{ modalData.media ? modalData.media.media.name : modalData.label }}
         </div>
 
         <hr/>

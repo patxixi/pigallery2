@@ -7,10 +7,26 @@ import {NetworkService} from '../../../../../model/network/network.service';
 import {Utils} from '../../../../../../../common/Utils';
 import {ContentLoaderService} from '../../../contentLoader.service';
 
+export interface MediaButtonFormData {
+  fields?: Record<string, any>,
+  customFields?: Record<string, any>
+}
+
 export interface MediaButtonModalData {
   button: IClientMediaButtonConfigWithBaseApiPath;
+  /**
+   * null in the selection mode (several media).
+   */
   media: GridMedia;
   visible: boolean;
+  /**
+   * Selection mode: called with the form data instead of running the button on one media.
+   */
+  onSubmit?: (formData: MediaButtonFormData) => Promise<void>;
+  /**
+   * Selection mode: what the action applies to (e.g.: '3 photos').
+   */
+  label?: string;
 }
 
 @Injectable({
@@ -31,11 +47,14 @@ export class MediaButtonModalService {
     return this.modalData$.asObservable();
   }
 
-  showModal(button: IClientMediaButtonConfigWithBaseApiPath, media: GridMedia): void {
+  showModal(button: IClientMediaButtonConfigWithBaseApiPath, media: GridMedia,
+            onSubmit?: (formData: MediaButtonFormData) => Promise<void>, label?: string): void {
     this.modalData$.next({
       button,
       media,
-      visible: true
+      visible: true,
+      onSubmit,
+      label
     });
   }
 

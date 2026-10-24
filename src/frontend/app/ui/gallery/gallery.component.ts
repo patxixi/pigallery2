@@ -1,3 +1,6 @@
+import {SelectionBarComponent} from './selection/selection-bar.component';
+import {MediaDTO} from '../../../../common/entities/MediaDTO';
+import {Utils} from '../../../../common/Utils';
 import {Component, HostListener, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {AuthenticationService} from '../../model/network/authentication.service';
 import {ActivatedRoute, Params, Router} from '@angular/router';
@@ -53,7 +56,8 @@ import {UploaderComponent} from './uploader/uploader.gallery.component';
     GPXFilesFilterPipe,
     PhotoFilterPipe,
     MediaButtonModalComponent,
-    UploaderComponent
+    UploaderComponent,
+    SelectionBarComponent,
   ]
 })
 export class GalleryComponent implements OnInit, OnDestroy {
@@ -75,6 +79,14 @@ export class GalleryComponent implements OnInit, OnDestroy {
   } = null;
   public readonly mapEnabled: boolean;
   public directoryContent: GroupedDirectoryContent;
+
+  /**
+   * Everything "select all" can select on this page (selection mode).
+   */
+  public readonly selectAllSource = (): { media: MediaDTO[], directories: string[] } => ({
+    media: (this.directoryContent?.mediaGroups || []).reduce((all, g) => all.concat(g.media), [] as MediaDTO[]),
+    directories: (this.directoryContent?.directories || []).map(d => Utils.concatUrls(d.path, d.name)),
+  });
   public isUploadOver = false;
   private $counter: Observable<number>;
   private subscription: { [key: string]: Subscription } = {
