@@ -8047,6 +8047,66 @@
         <source>Whole timeline</source>
         <target>Toute la timeline</target>
       </trans-unit>
+      <trans-unit id="8756327200752857172" datatype="html">
+        <source>ID token signing algorithm</source>
+        <target>Algorithme de signature du jeton d&apos;identité</target>
+      </trans-unit>
+      <trans-unit id="1025930439017761145" datatype="html">
+        <source>Algorithm the provider signs ID tokens with (e.g.: PS256). Leave empty to pick it from the provider&apos;s discovery document.</source>
+        <target>Algorithme avec lequel le fournisseur signe les jetons d&apos;identité (ex. : PS256). Laisser vide pour le lire dans le document de découverte du fournisseur.</target>
+      </trans-unit>
+      <trans-unit id="6966899663305832485" datatype="html">
+        <source>☐ Select</source>
+        <target>☐ Sélection</target>
+      </trans-unit>
+      <trans-unit id="1891101203441527228" datatype="html">
+        <source>✕ Cancel</source>
+        <target>✕ Annuler</target>
+      </trans-unit>
+      <trans-unit id="5806194876683725986" datatype="html">
+        <source>📤 Share</source>
+        <target>📤 Partager</target>
+      </trans-unit>
+      <trans-unit id="5843361075436152348" datatype="html">
+        <source>📤 Send <x id="INTERPOLATION" equiv-text="{{ readyToShare.length }}"/></source>
+        <target>📤 Envoyer <x id="INTERPOLATION" equiv-text="{{ readyToShare.length }}"/></target>
+      </trans-unit>
+      <trans-unit id="6511447956767278912" datatype="html">
+        <source>1 folder</source>
+        <target>1 dossier</target>
+      </trans-unit>
+      <trans-unit id="7196357954488847078" datatype="html">
+        <source><x id="COUNT" equiv-text="d"/> folders</source>
+        <target><x id="COUNT" equiv-text="d"/> dossiers</target>
+      </trans-unit>
+      <trans-unit id="751888288364406705" datatype="html">
+        <source>1 item</source>
+        <target>1 élément</target>
+      </trans-unit>
+      <trans-unit id="6089662502858220677" datatype="html">
+        <source><x id="COUNT" equiv-text="m"/> items</source>
+        <target><x id="COUNT" equiv-text="m"/> éléments</target>
+      </trans-unit>
+      <trans-unit id="7288643293040900189" datatype="html">
+        <source> (whole folders)</source>
+        <target> (dossiers entiers)</target>
+      </trans-unit>
+      <trans-unit id="2839004360205433948" datatype="html">
+        <source>Done: <x id="DONE" equiv-text="result.done"/>, failed: <x id="FAILED" equiv-text="result.failed.length"/></source>
+        <target>Fait : <x id="DONE" equiv-text="result.done"/>, en échec : <x id="FAILED" equiv-text="result.failed.length"/></target>
+      </trans-unit>
+      <trans-unit id="389130135406909605" datatype="html">
+        <source><x id="COUNT" equiv-text="videos"/> video(s) not shared: their location can&apos;t be removed here. Use a sharing link for videos.</source>
+        <target><x id="COUNT" equiv-text="videos"/> vidéo(s) non partagée(s) : leur position ne peut pas être retirée ici. Pour une vidéo, passer par un lien de partage.</target>
+      </trans-unit>
+      <trans-unit id="2129538587063367327" datatype="html">
+        <source>Download failed:</source>
+        <target>Échec du téléchargement :</target>
+      </trans-unit>
+      <trans-unit id="2797557150390126094" datatype="html">
+        <source>Sharing failed:</source>
+        <target>Échec du partage :</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>
