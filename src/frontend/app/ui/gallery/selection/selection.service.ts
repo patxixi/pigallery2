@@ -23,9 +23,9 @@ export interface BulkResult {
 export class SelectionService {
   public active = false;
   /**
-   * Selected media by relative path.
+   * Selected media by relative path (the media itself is unknown when selected by dragging).
    */
-  public readonly media = new Map<string, MediaDTO>();
+  public readonly media = new Map<string, MediaDTO | null>();
   /**
    * Selected directories (relative paths).
    */
@@ -72,6 +72,9 @@ export class SelectionService {
   }
 
   public toggleMedia(m: MediaDTO, selected?: boolean): void {
+    if (this.justDragged) {
+      return; // the click that ends a drag selection
+    }
     const p = SelectionService.mediaPath(m);
     const select = selected ?? !this.media.has(p);
     if (select) {
@@ -81,11 +84,56 @@ export class SelectionService {
     }
   }
 
+  /**
+   * Keys used on the tiles (data-selection attribute): 'm:<media path>' or 'd:<directory path>'.
+   */
+  public static mediaKey(m: MediaDTO): string {
+    return 'm:' + SelectionService.mediaPath(m);
+  }
+
+  public static directoryKey(path: string): string {
+    return 'd:' + path;
+  }
+
+  public hasKey(key: string): boolean {
+    const path = key.slice(2);
+    return key.startsWith('d:') ? this.directories.has(path) : this.media.has(path);
+  }
+
+  public setKey(key: string, selected: boolean): void {
+    const path = key.slice(2);
+    if (key.startsWith('d:')) {
+      if (selected) {
+        this.directories.add(path);
+      } else {
+        this.directories.delete(path);
+      }
+    } else if (selected) {
+      if (!this.media.has(path)) {
+        this.media.set(path, null);
+      }
+    } else {
+      this.media.delete(path);
+    }
+  }
+
+  /**
+   * Time of the end of the last drag selection: the click that follows it must be ignored.
+   */
+  public dragEndedAt = 0;
+
+  public get justDragged(): boolean {
+    return Date.now() - this.dragEndedAt < 400;
+  }
+
   public isDirectorySelected(path: string): boolean {
     return this.directories.has(path);
   }
 
   public toggleDirectory(path: string): void {
+    if (this.justDragged) {
+      return;
+    }
     if (this.directories.has(path)) {
       this.directories.delete(path);
     } else {
@@ -94,15 +142,15 @@ export class SelectionService {
   }
 
   public selectAll(media: MediaDTO[], directories: string[] = []): void {
-    media.forEach(m => this.toggleMedia(m, true));
+    media.forEach(m => this.media.set(SelectionService.mediaPath(m), m));
     directories.forEach(d => this.directories.add(d));
   }
 
   /**
    * Selected photos (videos excluded: they can't be stripped of their location here).
    */
-  get photos(): MediaDTO[] {
-    return [...this.media.values()].filter(m => MediaDTOUtils.isPhoto(m));
+  get photoPaths(): string[] {
+    return [...this.media.keys()].filter(p => !MediaDTOUtils.isVideoPath(p));
   }
 
   /**

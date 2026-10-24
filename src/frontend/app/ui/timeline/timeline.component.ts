@@ -401,6 +401,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
    * After a bulk action: the timeline caches days and months, a reload is the simplest
    * way to show the change (the scroll position is kept across a reload).
    */
+  public tileKey(t: Tile): string {
+    return SelectionService.mediaKey(t.media);
+  }
+
   public reloadPage(): void {
     this.timelineService.setScrollY(PageHelper.ScrollY, this.filter);
     window.location.reload();
