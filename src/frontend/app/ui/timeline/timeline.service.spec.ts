@@ -1,6 +1,6 @@
 import {TimelineService} from './timeline.service';
 import {MediaDTO} from '../../../../common/entities/MediaDTO';
-import {SearchQueryTypes} from '../../../../common/entities/SearchQueryDTO';
+import {ANDSearchQuery, DateSearch, SearchQueryTypes, TextSearch} from '../../../../common/entities/SearchQueryDTO';
 import {Config} from '../../../../common/config/public/Config';
 
 describe('TimelineService', () => {
@@ -32,11 +32,19 @@ describe('TimelineService', () => {
   });
 
   it('should build a date range query covering the whole month', () => {
-    const q = TimelineService.monthQuery('2024-02');
+    const q = TimelineService.monthQuery('2024-02') as DateSearch;
     expect(q.type).toEqual(SearchQueryTypes.date);
     expect(q.min).toEqual(Date.UTC(2024, 1, 1));
     expect(q.max).toEqual(Date.UTC(2024, 2, 1) - 1);
     // December rolls over to January of the next year
-    expect(TimelineService.monthQuery('2025-12').max).toEqual(Date.UTC(2026, 0, 1) - 1);
+    expect((TimelineService.monthQuery('2025-12') as DateSearch).max).toEqual(Date.UTC(2026, 0, 1) - 1);
+  });
+
+  it('should AND the month range with the filter', () => {
+    const filter = {type: SearchQueryTypes.person, value: 'Iban'} as TextSearch;
+    const q = TimelineService.monthQuery('2024-02', filter) as ANDSearchQuery;
+    expect(q.type).toEqual(SearchQueryTypes.AND);
+    expect(q.list[0]).toBe(filter);
+    expect((q.list[1] as DateSearch).min).toEqual(Date.UTC(2024, 1, 1));
   });
 });
