@@ -1,0 +1,25 @@
+<div class="selection-bar" *ngIf="selection.canSelect">
+  <button class="btn btn-sm btn-secondary" (click)="toggleMode()">
+    <ng-container *ngIf="!selection.active" i18n>☐ Select</ng-container>
+    <ng-container *ngIf="selection.active" i18n>✕ Cancel</ng-container>
+  </button>
+  <ng-container *ngIf="selection.active">
+    <span class="count">{{ selection.progress || summary }}</span>
+    <button *ngIf="selectAllSource" class="btn btn-sm btn-secondary" (click)="selectAll()" i18n>All</button>
+    <button class="btn btn-sm btn-secondary" (click)="share()"
+            [disabled]="selection.media.size === 0 || downloading">
+      <ng-container *ngIf="!readyToShare" i18n>📤 Share</ng-container>
+      <ng-container *ngIf="readyToShare" i18n>📤 Send {{ readyToShare.length }}</ng-container>
+    </button>
+    <button *ngFor="let button of selection.bulkButtons"
+            class="btn btn-sm btn-secondary bulk-button"
+            [title]="button.name"
+            [disabled]="!selection.canRun(button) || selection.progress"
+            (click)="runButton(button)">
+      <svg xmlns="http://www.w3.org/2000/svg" class="bulk-button-icon" fill="currentcolor"
+           [attr.viewBox]="button.svgIcon.viewBox || '0 0 512 512'"
+           [innerHtml]="button.svgIcon.items | safeHtml"></svg>
+      {{ button.name }}
+    </button>
+  </ng-container>
+</div>

@@ -1,3 +1,4 @@
+import {SelectionService} from '../../selection/selection.service';
 import {Component, ElementRef, Input, OnDestroy, OnInit, ViewChild,} from '@angular/core';
 import {Dimension, IRenderable} from '../../../../model/IRenderable';
 import {GridMedia} from '../GridMedia';
@@ -60,9 +61,14 @@ export class GalleryPhotoComponent implements IRenderable, OnInit, OnDestroy {
     private thumbnailService: ThumbnailManagerService,
     private authService: AuthenticationService,
     private extensionService: ExtensionService,
-    private modalService: MediaButtonModalService
+    private modalService: MediaButtonModalService,
+    public selection: SelectionService
   ) {
     this.searchEnabled = this.authService.canSearch();
+  }
+
+  get Selected(): boolean {
+    return this.selection.active && this.selection.isMediaSelected(this.gridMedia.media);
   }
 
   get ScrollListener(): boolean {
@@ -104,6 +110,9 @@ export class GalleryPhotoComponent implements IRenderable, OnInit, OnDestroy {
     });
 
     this.mediaButtons = allButtons.filter(button => {
+      if (button.bulkOnly) {
+        return false; // only offered in the selection mode
+      }
       if (this.gridMedia.isVideo() && button.skipVideos) {
         return false;
       }

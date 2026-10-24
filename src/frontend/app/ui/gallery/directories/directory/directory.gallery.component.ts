@@ -1,3 +1,4 @@
+import {SelectionService} from '../../selection/selection.service';
 import {Component, Input, OnDestroy, OnInit} from '@angular/core';
 import {DomSanitizer, SafeStyle} from '@angular/platform-browser';
 import {SubDirectoryDTO} from '../../../../../../common/entities/DirectoryDTO';
@@ -28,8 +29,22 @@ export class GalleryDirectoryComponent implements OnInit, OnDestroy {
   constructor(
       private thumbnailService: ThumbnailManagerService,
       private sanitizer: DomSanitizer,
-      public queryService: QueryService
+      public queryService: QueryService,
+      public selection: SelectionService
   ) {
+  }
+
+  get Selected(): boolean {
+    return this.selection.active && this.selection.isDirectorySelected(this.getDirectoryPath());
+  }
+
+  /**
+   * Selection mode: a tap selects the folder (and everything in it) instead of opening it.
+   */
+  onClick(): void {
+    if (this.selection.active) {
+      this.selection.toggleDirectory(this.getDirectoryPath());
+    }
   }
 
   public get SamplePhoto(): CoverPhotoDTO {

@@ -1,7 +1,10 @@
 <a class="button btn btn-secondary"
-   [routerLink]="['/gallery', getDirectoryPath()]"
+   [class.selected]="Selected"
+   [routerLink]="selection.active ? null : ['/gallery', getDirectoryPath()]"
    [queryParams]="queryService.getParams()"
+   (click)="onClick()"
    style="display: inline-block;">
+  <div *ngIf="Selected" class="selected-check">✓</div>
 
 
   <div class="photo-container rounded overflow-hidden"

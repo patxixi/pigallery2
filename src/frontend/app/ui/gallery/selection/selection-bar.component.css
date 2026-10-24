@@ -1,0 +1,26 @@
+.selection-bar {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100vw - 24px);
+  z-index: 1040;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(33, 37, 41, 0.92);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.count {
+  font-size: 0.9rem;
+}
+
+.bulk-button-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}

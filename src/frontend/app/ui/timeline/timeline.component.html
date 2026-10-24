@@ -22,6 +22,7 @@
                  [style.grid-template-columns]="'repeat(' + columns + ', ' + tileSize + 'px)'"
                  [style.grid-auto-rows.px]="tileSize">
               <a *ngFor="let t of d.tiles; trackBy: trackTile" class="tile" role="button"
+                 [class.selected]="selection.active && selection.isMediaSelected(t.media)"
                  [attr.title]="t.media.name" (click)="open(m, t)">
                 <img [src]="t.src" loading="lazy" decoding="async" alt="">
                 <ng-icon *ngIf="t.video" class="video" name="ionVideocamOutline"></ng-icon>
@@ -48,3 +49,6 @@
     </div>
   </div>
 </app-frame>
+
+<app-media-button-modal></app-media-button-modal>
+<app-selection-bar (changed)="reloadPage()"></app-selection-bar>

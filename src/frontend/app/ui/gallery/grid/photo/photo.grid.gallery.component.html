@@ -1,4 +1,5 @@
-<div #photoContainer class="photo-container rounded" (mouseover)="mouseOver()" (mouseout)="mouseOut()">
+<div #photoContainer class="photo-container rounded" [class.selected]="Selected" (mouseover)="mouseOver()" (mouseout)="mouseOut()">
+  <div *ngIf="Selected" class="selected-check">✓</div>
 
 
   <img alt="{{gridMedia.media.name}}" #img [src]="thumbnail.Src"
@@ -23,7 +24,7 @@
   </div>
 
   <!-- Media buttons -->
-  <div class="media-buttons" *ngIf="mediaButtons.length > 0">
+  <div class="media-buttons" *ngIf="mediaButtons.length > 0 && !selection.active">
     <button *ngFor="let button of mediaButtons"
             class="media-button"
             [class.always-visible]="button.alwaysVisible"

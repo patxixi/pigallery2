@@ -65,3 +65,22 @@ a:hover .photo-container {
   width: 180px;
   white-space: normal;
 }
+
+a.selected {
+  outline: 4px solid var(--bs-primary, #1c7ed6);
+  outline-offset: -4px;
+}
+
+.selected-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 5;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bs-primary, #1c7ed6);
+  color: #fff;
+  font: bold 17px/26px system-ui, sans-serif;
+  text-align: center;
+}

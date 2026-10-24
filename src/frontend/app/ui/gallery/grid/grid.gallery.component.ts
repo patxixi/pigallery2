@@ -1,3 +1,4 @@
+import {SelectionService} from '../selection/selection.service';
 import {
   AfterViewInit,
   ChangeDetectorRef,
@@ -90,7 +91,8 @@ export class GalleryGridComponent
     public sortingService: GallerySortingService,
     public navigatorService: GalleryNavigatorService,
     private route: ActivatedRoute,
-    public blogService: BlogService
+    public blogService: BlogService,
+    private selection: SelectionService
   ) {
   }
 
@@ -205,6 +207,10 @@ export class GalleryGridComponent
   }
 
   photoClicked(media: MediaDTO): void {
+    if (this.selection.active) {
+      this.selection.toggleMedia(media);
+      return;
+    }
     this.router.navigate([], {
       queryParams: this.queryService.getParams({media}),
     });

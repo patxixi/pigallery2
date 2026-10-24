@@ -167,6 +167,21 @@ export interface IClientMediaButtonConfig {
    * If you change any media file, you should set this to false.
    */
   skipDirectoryInvalidation?: boolean;
+  /**
+   * If true, the button is also offered in the selection mode, for several media at once.
+   * Without bulkApiPath, apiPath is called once per selected media (directories can't be selected then).
+   */
+  bulk?: boolean;
+  /**
+   * Optional path (relative to the extension, like apiPath) of a route that handles a whole selection in one call.
+   * It receives a POST with {media: string[], directories: string[], data} (relative paths) and must check
+   * the access of the user itself (e.g.: with extension.RESTApi.post.jsonResponse).
+   */
+  bulkApiPath?: string;
+  /**
+   * If true, the button is only offered in the selection mode (not on the photos).
+   */
+  bulkOnly?: boolean;
 }
 
 export interface UIExtensionDTO {
