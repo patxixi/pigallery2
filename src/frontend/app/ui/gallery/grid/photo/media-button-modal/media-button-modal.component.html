@@ -19,7 +19,8 @@
         <p *ngIf="modalData.button.popup?.body">{{ modalData.button.popup.body }}</p>
 
         <!-- Form fields -->
-        <div *ngIf="modalData.button.popup?.fields && modalData.button.popup.fields.length > 0">
+        <!-- Metadata of one media: not shown for a selection of several media -->
+        <div *ngIf="modalData.media && modalData.button.popup?.fields && modalData.button.popup.fields.length > 0">
           <div *ngFor="let field of modalData.button.popup.fields" class="mb-3">
             <label [for]="field" class="form-label">{{ getFieldLabel(field) }}</label>
             <input [id]="field"
