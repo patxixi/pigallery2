@@ -1,5 +1,5 @@
 import {SelectionService} from '../../selection/selection.service';
-import {Component, ElementRef, Input, OnDestroy, OnInit, ViewChild,} from '@angular/core';
+import {Component, ElementRef, HostBinding, Input, OnDestroy, OnInit, ViewChild,} from '@angular/core';
 import {Dimension, IRenderable} from '../../../../model/IRenderable';
 import {GridMedia} from '../GridMedia';
 import {RouterLink} from '@angular/router';
@@ -65,6 +65,17 @@ export class GalleryPhotoComponent implements IRenderable, OnInit, OnDestroy {
     public selection: SelectionService
   ) {
     this.searchEnabled = this.authService.canSearch();
+  }
+
+  /**
+   * Selection mode: key used by the drag selection; vertical gestures keep scrolling.
+   */
+  @HostBinding('attr.data-selection') get SelectionKey(): string {
+    return this.selection.active ? SelectionService.mediaKey(this.gridMedia.media) : null;
+  }
+
+  @HostBinding('style.touch-action') get TouchAction(): string {
+    return this.selection.active ? 'pan-y' : null;
   }
 
   get Selected(): boolean {

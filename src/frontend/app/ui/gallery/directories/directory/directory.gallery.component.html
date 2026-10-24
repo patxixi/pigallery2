@@ -1,5 +1,7 @@
 <a class="button btn btn-secondary"
    [class.selected]="Selected"
+   [attr.data-selection]="selection.active ? 'd:' + getDirectoryPath() : null"
+   [style.touch-action]="selection.active ? 'pan-y' : null"
    [routerLink]="selection.active ? null : ['/gallery', getDirectoryPath()]"
    [queryParams]="queryService.getParams()"
    (click)="onClick()"

@@ -1,4 +1,5 @@
-import {Component, EventEmitter, Input, OnDestroy, Output} from '@angular/core';
+import {Component, EventEmitter, Input, NgZone, OnDestroy, OnInit, Output} from '@angular/core';
+import {DragSelect} from './drag-select';
 import {NgFor, NgIf} from '@angular/common';
 import {MediaDTO} from '../../../../../common/entities/MediaDTO';
 import {Config} from '../../../../../common/config/public/Config';
@@ -19,7 +20,7 @@ import {jpegWithoutGps, toJpeg} from './strip-gps';
   styleUrls: ['./selection-bar.component.css'],
   imports: [NgIf, NgFor, SafeHtmlPipe]
 })
-export class SelectionBarComponent implements OnDestroy {
+export class SelectionBarComponent implements OnInit, OnDestroy {
   /**
    * Returns everything that "select all" can select on the current page (null: no "select all").
    */
@@ -35,11 +36,20 @@ export class SelectionBarComponent implements OnDestroy {
   readyToShare: File[] = null;
   downloading = false;
 
+  private readonly dragSelect: DragSelect;
+
   constructor(public selection: SelectionService,
-              private modalService: MediaButtonModalService) {
+              private modalService: MediaButtonModalService,
+              zone: NgZone) {
+    this.dragSelect = new DragSelect(selection, zone);
+  }
+
+  ngOnInit(): void {
+    this.dragSelect.attach();
   }
 
   ngOnDestroy(): void {
+    this.dragSelect.detach();
     this.selection.stop();
   }
 
@@ -136,7 +146,7 @@ export class SelectionBarComponent implements OnDestroy {
     if (this.readyToShare) {
       return this.openShareMenu();
     }
-    const photos = this.selection.photos;
+    const photos = this.selection.photoPaths;
     const videos = this.selection.media.size - photos.length;
     if (videos) {
       window.alert($localize`${videos}:COUNT: video(s) not shared: their location can't be removed here. Use a sharing link for videos.`);
@@ -148,8 +158,7 @@ export class SelectionBarComponent implements OnDestroy {
     const files: File[] = [];
     let total = 0;
     try {
-      for (const m of photos) {
-        const path = SelectionService.mediaPath(m);
+      for (const path of photos) {
         this.selection.progress = `${files.length + 1}/${photos.length} (${Math.round(total / 1e6)} MB)…`;
         const r = await fetch(SelectionBarComponent.originalUrl(path), {credentials: 'same-origin'});
         if (!r.ok) {
