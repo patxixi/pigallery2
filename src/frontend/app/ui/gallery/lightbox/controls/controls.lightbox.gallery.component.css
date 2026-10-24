@@ -325,3 +325,13 @@ canvas {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+.media-button-icon {
+  width: 0.85em;
+  height: 0.85em;
+  vertical-align: middle;
+}
+
+.media-button.no-click {
+  cursor: default;
+}

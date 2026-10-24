@@ -93,4 +93,46 @@ describe('ControlsLightboxComponent - cursor visibility', () => {
     expect(swipeable).toBeTruthy();
     expect(swipeable.classList.contains('hide-cursor')).toBe(false);
   });
+
+  describe('extension media buttons', () => {
+    const button = {
+      name: 'add to favorites',
+      apiPath: 'favorite',
+      svgIcon: {viewBox: '0 0 10 10', items: '<path d="M0 0h10v10H0z"/>'},
+    };
+    let onMediaButtonClick: jasmine.Spy;
+
+    beforeEach(() => {
+      onMediaButtonClick = jasmine.createSpy('onMediaButtonClick');
+      // Titles depend on the lightbox config, not under test here.
+      spyOn(component as any, 'getText').and.returnValue('');
+      const media = {name: 'a.jpg', metadata: {size: {width: 10, height: 10}, creationDate: 0}};
+      component.activePhoto = {
+        mediaButtons: [button],
+        onMediaButtonClick,
+        gridMedia: {
+          media,
+          Photo: media,
+          isVideo: () => false,
+          isPhoto: () => true,
+          getOriginalMediaPath: () => '/a.jpg',
+        },
+      } as any;
+      fixture.detectChanges();
+    });
+
+    it('should show the buttons of the active photo', () => {
+      const buttons: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.controls-top .media-button'));
+      expect(buttons.length).toBe(1);
+      expect(buttons[0].title).toBe('add to favorites');
+      expect(buttons[0].querySelector('svg path')).toBeTruthy();
+    });
+
+    it('should run the button action of the active photo on click', () => {
+      const el: HTMLElement = fixture.nativeElement.querySelector('.controls-top .media-button');
+      el.click();
+      expect(onMediaButtonClick).toHaveBeenCalledTimes(1);
+      expect(onMediaButtonClick.calls.mostRecent().args[0]).toBe(button);
+    });
+  });
 });

@@ -19,6 +19,7 @@ import {BsDropdownDirective, BsDropdownMenuDirective, BsDropdownToggleDirective}
 import {FormsModule} from '@angular/forms';
 import {RouterLink} from '@angular/router';
 import {SearchQueryUtils} from '../../../../../../common/SearchQueryUtils';
+import {SafeHtmlPipe} from '../../../../pipes/SafeHTMLPipe';
 
 
 @Component({
@@ -34,6 +35,7 @@ import {SearchQueryUtils} from '../../../../../../common/SearchQueryUtils';
     FormsModule,
     NgFor,
     RouterLink,
+    SafeHtmlPipe,
   ]
 })
 export class ControlsLightboxComponent implements OnDestroy, OnChanges {
