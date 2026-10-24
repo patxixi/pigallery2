@@ -342,14 +342,37 @@ describe('AlbumManager', (sqlHelper: DBTestHelper) => {
       expect(totalCacheCount).to.be.greaterThan(0);
       expect(validCacheCount).to.equal(0);
 
-      // Accessing albums again should rebuild cache
+      // Accessing albums again should rebuild cache (in the background)
       await am.getAll(DBTestHelper.defaultSession);
+      await am.waitForRefresh(DBTestHelper.defaultSession);
 
       validCacheCount = await connection.getRepository(ProjectedAlbumCacheEntity)
         .count({where: {valid: true, projectionKey: DBTestHelper.defaultSession.user.projectionKey}});
       expect(validCacheCount).to.be.greaterThan(0);
     });
 
+  
+    it('should return outdated albums right away and refresh them in the background', async () => {
+      const am = new AlbumManager();
+      const connection = await SQLConnection.getConnection();
+      const query: TextSearch = {value: 'photo1', type: SearchQueryTypes.any_text};
+      await am.addSavedSearch('Stale Album', Utils.clone(query));
+
+      const first = await am.getAll(DBTestHelper.defaultSession);
+      const count = first.find(a => a.name === 'Stale Album').cache.itemCount;
+
+      await am.invalidateCache();
+      const outdated = await am.getAll(DBTestHelper.defaultSession);
+      const album = outdated.find(a => a.name === 'Stale Album');
+      // The last computed values are kept while the refresh runs
+      expect(album.cache.valid).to.equal(false);
+      expect(album.cache.itemCount).to.equal(count);
+
+      await am.waitForRefresh(DBTestHelper.defaultSession);
+      const validCacheCount = await connection.getRepository(ProjectedAlbumCacheEntity)
+        .count({where: {valid: true, projectionKey: DBTestHelper.defaultSession.user.projectionKey}});
+      expect(validCacheCount).to.be.greaterThan(0);
+    });
   });
 
 
