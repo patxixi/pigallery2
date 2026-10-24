@@ -51,6 +51,7 @@ App CLI options:
   --Users-oidc-clientSecret                                                  (default: '')
   --Users-oidc-redirectUri                                                  Full callback URL registered at the provider (e.g.: https://example.com/pgapi/auth/oidc/callback) (default: '')
   --Users-oidc-scopes                                                        (default: ["openid","profile","email"])
+  --Users-oidc-idTokenSignedResponseAlg                                     Algorithm the provider signs ID tokens with (e.g.: PS256). Leave empty to pick it from the provider's discovery document. (default: '')
   --Users-oidc-usernameClaim                                                JWT claim to use for matching user name. Defaults to preferred_username; fallbacks to email if empty. (default: 'preferred_username')
   --Users-oidc-emailClaim                                                    (default: 'email')
   --Users-oidc-allowedDomains                                               If set, only identities with emails in these domains will be accepted. (default: [])
@@ -239,6 +240,7 @@ Environmental variables:
   Users-oidc-clientSecret                                                (default: '')
   Users-oidc-redirectUri                                                Full callback URL registered at the provider (e.g.: https://example.com/pgapi/auth/oidc/callback) (default: '')
   Users-oidc-scopes                                                      (default: ["openid","profile","email"])
+  Users-oidc-idTokenSignedResponseAlg                                   Algorithm the provider signs ID tokens with (e.g.: PS256). Leave empty to pick it from the provider's discovery document. (default: '')
   Users-oidc-usernameClaim                                              JWT claim to use for matching user name. Defaults to preferred_username; fallbacks to email if empty. (default: 'preferred_username')
   Users-oidc-emailClaim                                                  (default: 'email')
   Users-oidc-allowedDomains                                             If set, only identities with emails in these domains will be accepted. (default: [])
@@ -468,6 +470,8 @@ Environmental variables:
                 "profile",
                 "email"
             ],
+            "//[idTokenSignedResponseAlg]": "Algorithm the provider signs ID tokens with (e.g.: PS256). Leave empty to pick it from the provider's discovery document.",
+            "idTokenSignedResponseAlg": "",
             "//[usernameClaim]": "JWT claim to use for matching user name. Defaults to preferred_username; fallbacks to email if empty.",
             "usernameClaim": "preferred_username",
             "emailClaim": "email",
