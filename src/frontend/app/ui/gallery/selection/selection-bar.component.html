@@ -1,4 +1,4 @@
-<div class="selection-bar" *ngIf="selection.canSelect">
+<div class="selection-bar" *ngIf="canSelect">
   <button class="btn btn-sm btn-secondary" (click)="toggleMode()">
     <ng-container *ngIf="!selection.active" i18n>☐ Select</ng-container>
     <ng-container *ngIf="selection.active" i18n>✕ Cancel</ng-container>
@@ -11,7 +11,7 @@
       <ng-container *ngIf="!readyToShare" i18n>📤 Share</ng-container>
       <ng-container *ngIf="readyToShare" i18n>📤 Send {{ readyToShare.length }}</ng-container>
     </button>
-    <button *ngFor="let button of selection.bulkButtons"
+    <button *ngFor="let button of bulkButtons"
             class="btn btn-sm btn-secondary bulk-button"
             [title]="button.name"
             [disabled]="!selection.canRun(button) || selection.progress"
