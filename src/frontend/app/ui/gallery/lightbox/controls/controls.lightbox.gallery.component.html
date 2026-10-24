@@ -11,6 +11,19 @@
   <div [class.dim-controls]="controllersDimmed"
        class="controls controls-top">
     <div class="controls-background rounded-start-bottom">
+      <!-- Extension media buttons, as on the grid tiles (same filters and actions) -->
+      <div *ngFor="let button of activePhoto?.mediaButtons"
+           class="highlight control-button media-button"
+           [class.no-click]="!button.apiPath"
+           [title]="button.name"
+           (click)="activePhoto.onMediaButtonClick(button, $event)">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="media-button-icon"
+             fill="currentcolor"
+             [attr.viewBox]="button.svgIcon.viewBox || '0 0 512 512'"
+             [innerHtml]="button.svgIcon.items | safeHtml">
+        </svg>
+      </div>
       <div class="highlight control-button" (click)="toggleInfoPanel.emit()"
            title="info key: i" i18n-title>
         <ng-icon name="ionInformationOutline"></ng-icon>
