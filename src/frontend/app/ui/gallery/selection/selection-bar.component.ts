@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, NgZone, OnDestroy, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Injector, Input, NgZone, OnDestroy, OnInit, Output} from '@angular/core';
 import {DragSelect} from './drag-select';
 import {NgFor, NgIf} from '@angular/common';
 import {MediaDTO} from '../../../../../common/entities/MediaDTO';
@@ -9,6 +9,10 @@ import {SelectionService} from './selection.service';
 import {IClientMediaButtonConfigWithBaseApiPath} from '../grid/photo/photo.grid.gallery.component';
 import {MediaButtonModalService} from '../grid/photo/media-button-modal/media-button-modal.service';
 import {jpegWithoutGps, toJpeg} from './strip-gps';
+import {ExtensionService} from '../../../model/extension.service';
+import {AuthenticationService} from '../../../model/network/authentication.service';
+import {NetworkService} from '../../../model/network/network.service';
+import {UserRoles} from '../../../../../common/entities/UserDTO';
 
 /**
  * Floating bar of the selection mode: start/cancel, count, select all, share
@@ -38,10 +42,29 @@ export class SelectionBarComponent implements OnInit, OnDestroy {
 
   private readonly dragSelect: DragSelect;
 
+  private buttons: IClientMediaButtonConfigWithBaseApiPath[] = null;
+
   constructor(public selection: SelectionService,
-              private modalService: MediaButtonModalService,
+              private authService: AuthenticationService,
+              private injector: Injector,
               zone: NgZone) {
     this.dragSelect = new DragSelect(selection, zone);
+  }
+
+  /**
+   * Extension buttons offered in bulk to the current user. Services are fetched only when the
+   * selection mode is used: pages that just show the bar don't depend on them.
+   */
+  get bulkButtons(): IClientMediaButtonConfigWithBaseApiPath[] {
+    if (this.buttons === null) {
+      this.buttons = SelectionService.bulkButtons(this.injector.get(ExtensionService).UIExtensionConfig,
+        (role) => this.authService.isAuthorized(role));
+    }
+    return this.buttons;
+  }
+
+  get canSelect(): boolean {
+    return this.authService.isAuthorized(UserRoles.User);
   }
 
   ngOnInit(): void {
@@ -87,7 +110,7 @@ export class SelectionBarComponent implements OnInit, OnDestroy {
     }
     const label = this.summary + (this.selection.directories.size ? $localize` (whole folders)` : '');
     if (button.popup) {
-      this.modalService.showModal(button, null, (formData) => this.execute(button, formData), label);
+      this.injector.get(MediaButtonModalService).showModal(button, null, (formData) => this.execute(button, formData), label);
       return;
     }
     if (!window.confirm(`${button.name}: ${label}?`)) {
@@ -98,7 +121,9 @@ export class SelectionBarComponent implements OnInit, OnDestroy {
 
   private async execute(button: IClientMediaButtonConfigWithBaseApiPath,
                         formData?: { fields?: Record<string, unknown>, customFields?: Record<string, unknown> }): Promise<void> {
-    const result = await this.selection.run(button, formData);
+    // fetched only when needed: pages that just show the bar don't depend on the network service
+    const network = this.injector.get(NetworkService);
+    const result = await this.selection.run(button, formData, (url, body) => network.postJson(url, body));
     if (result.failed.length) {
       window.alert($localize`Done: ${result.done}:DONE:, failed: ${result.failed.length}:FAILED:` + '\n' + result.failed.slice(0, 10).join('\n'));
     }

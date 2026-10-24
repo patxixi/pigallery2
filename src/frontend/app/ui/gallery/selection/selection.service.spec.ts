@@ -19,6 +19,8 @@ describe('SelectionService', () => {
 
   let posted: [string, any][];
   let service: SelectionService;
+  let configs: any;
+  let post: (url: string, data: any) => Promise<unknown>;
 
   beforeEach(() => {
     posted = [];
@@ -28,18 +30,16 @@ describe('SelectionService', () => {
         return Promise.resolve();
       }
     };
-    const extensions = {
-      UIExtensionConfig: [{
+    configs = [{
         extensionBasePath: '/pgapi/extension/x',
         mediaButtons: [
           {name: 'tile only', apiPath: 'a', svgIcon: {viewBox: '', items: ''}},
           {name: 'bulk', apiPath: 'b', bulk: true, svgIcon: {viewBox: '', items: ''}},
           {name: 'admin bulk', apiPath: 'c', bulk: true, minUserRole: UserRoles.Admin, svgIcon: {viewBox: '', items: ''}},
         ]
-      }]
-    };
-    const auth = {isAuthorized: (role: UserRoles) => role <= UserRoles.User};
-    service = new SelectionService(extensions as any, auth as any, network as any);
+    }] as any;
+    post = network.postJson;
+    service = new SelectionService();
   });
 
   it('should toggle media and directories', () => {
@@ -55,13 +55,13 @@ describe('SelectionService', () => {
   });
 
   it('should only offer bulk buttons the user may use', () => {
-    expect(service.bulkButtons.map(b => b.name)).toEqual(['bulk']);
+    expect(SelectionService.bulkButtons(configs, (role: UserRoles) => role <= UserRoles.User).map(b => b.name)).toEqual(['bulk']);
   });
 
   it('should call the bulk route once with the whole selection', async () => {
     service.toggleMedia(media('2024/05', 'a.jpg'));
     service.toggleDirectory('2024/06');
-    const r = await service.run(button({bulkApiPath: 'lot'}), {customFields: {k: 1}});
+    const r = await service.run(button({bulkApiPath: 'lot'}), {customFields: {k: 1}}, post);
     expect(posted.length).toBe(1);
     expect(posted[0][0]).toBe('/pgapi/extension/x/lot');
     expect(posted[0][1].media).toEqual(['2024/05/a.jpg']);
@@ -72,7 +72,7 @@ describe('SelectionService', () => {
   it('should call the media route once per media without a bulk route', async () => {
     service.toggleMedia(media('2024/05', 'a.jpg'));
     service.toggleMedia(media('2024/05', 'b.jpg'));
-    const r = await service.run(button({}));
+    const r = await service.run(button({}), undefined, post);
     expect(posted.map(p => p[1].media)).toEqual(['2024/05/a.jpg', '2024/05/b.jpg']);
     expect(r.done).toBe(2);
   });

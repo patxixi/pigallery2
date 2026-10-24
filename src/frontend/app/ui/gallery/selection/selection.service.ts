@@ -1,11 +1,9 @@
 import {Injectable} from '@angular/core';
 import {MediaDTO, MediaDTOUtils} from '../../../../../common/entities/MediaDTO';
 import {Utils} from '../../../../../common/Utils';
-import {UserRoles} from '../../../../../common/entities/UserDTO';
-import {ExtensionService} from '../../../model/extension.service';
-import {AuthenticationService} from '../../../model/network/authentication.service';
-import {NetworkService} from '../../../model/network/network.service';
 import {IClientMediaButtonConfigWithBaseApiPath} from '../grid/photo/photo.grid.gallery.component';
+import {UIExtensionDTO} from '../../../../../common/entities/extension/IClientUIConfig';
+import {UserRoles} from '../../../../../common/entities/UserDTO';
 
 export interface BulkResult {
   done: number;
@@ -35,10 +33,6 @@ export class SelectionService {
    */
   public progress: string = null;
 
-  constructor(private extensionService: ExtensionService,
-              private authService: AuthenticationService,
-              private networkService: NetworkService) {
-  }
 
   public static mediaPath(m: MediaDTO): string {
     return Utils.concatUrls(m.directory.path, m.directory.name, m.name);
@@ -46,10 +40,6 @@ export class SelectionService {
 
   get count(): number {
     return this.media.size + this.directories.size;
-  }
-
-  get canSelect(): boolean {
-    return this.authService.isAuthorized(UserRoles.User);
   }
 
   public start(): void {
@@ -154,14 +144,15 @@ export class SelectionService {
   }
 
   /**
-   * Extension buttons offered in the selection mode for the current user.
+   * Extension buttons offered in the selection mode for a user.
    */
-  get bulkButtons(): IClientMediaButtonConfigWithBaseApiPath[] {
+  public static bulkButtons(configs: UIExtensionDTO[],
+                            isAuthorized: (role: UserRoles) => boolean): IClientMediaButtonConfigWithBaseApiPath[] {
     const buttons: IClientMediaButtonConfigWithBaseApiPath[] = [];
-    (this.extensionService.UIExtensionConfig || []).forEach(config => {
+    (configs || []).forEach(config => {
       (config.mediaButtons || [])
         .filter(b => b.bulk && (b.bulkApiPath || b.apiPath))
-        .filter(b => !b.minUserRole || this.authService.isAuthorized(b.minUserRole))
+        .filter(b => !b.minUserRole || isAuthorized(b.minUserRole))
         .forEach(b => buttons.push({...b, extensionBasePath: config.extensionBasePath}));
     });
     return buttons;
@@ -181,13 +172,14 @@ export class SelectionService {
    * Runs the button on the whole selection: one call to its bulkApiPath, or one call per media to its apiPath.
    */
   public async run(button: IClientMediaButtonConfigWithBaseApiPath,
-                   data?: { fields?: Record<string, unknown>, customFields?: Record<string, unknown> }): Promise<BulkResult> {
+                   data: { fields?: Record<string, unknown>, customFields?: Record<string, unknown> },
+                   postJson: (url: string, body: unknown) => Promise<unknown>): Promise<BulkResult> {
     const media = [...this.media.keys()];
     const directories = [...this.directories];
     if (button.bulkApiPath) {
       this.progress = '…';
       try {
-        await this.networkService.postJson(Utils.concatUrls(button.extensionBasePath, button.bulkApiPath),
+        await postJson(Utils.concatUrls(button.extensionBasePath, button.bulkApiPath),
           {media, directories, data});
         return {done: media.length + directories.length, failed: []};
       } catch (e) {
@@ -200,7 +192,7 @@ export class SelectionService {
     for (const m of media) {
       this.progress = `${result.done + result.failed.length + 1}/${media.length}…`;
       try {
-        await this.networkService.postJson(Utils.concatUrls(button.extensionBasePath, button.apiPath), {media: m, data});
+        await postJson(Utils.concatUrls(button.extensionBasePath, button.apiPath), {media: m, data});
         result.done++;
       } catch (e) {
         result.failed.push(m);
