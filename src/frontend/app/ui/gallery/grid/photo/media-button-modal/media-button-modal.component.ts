@@ -154,7 +154,7 @@ export class MediaButtonModalComponent implements OnInit, OnDestroy {
 
   private initFormData(): void {
     this.formData = {};
-    if (this.modalData?.button?.popup?.fields) {
+    if (this.modalData?.media && this.modalData?.button?.popup?.fields) {
       this.formData.fields = {};
       this.modalData.button.popup.fields.forEach(field => {
         this.formData.fields[field] = this.getFieldValue(field);
