@@ -8055,6 +8055,10 @@
         <source>Algorithm the provider signs ID tokens with (e.g.: PS256). Leave empty to pick it from the provider&apos;s discovery document.</source>
         <target>Algorithme avec lequel le fournisseur signe les jetons d&apos;identité (ex. : PS256). Laisser vide pour le lire dans le document de découverte du fournisseur.</target>
       </trans-unit>
+      <trans-unit id="3208205344998611893" datatype="html">
+        <source>Max memory to decode a photo</source>
+        <target>Mémoire maximale pour décoder une photo</target>
+      </trans-unit>
       <trans-unit id="6966899663305832485" datatype="html">
         <source>☐ Select</source>
         <target>☐ Sélection</target>

@@ -95,6 +95,7 @@ export class PhotoProcessing {
         height: faceRegion.box.height + margin.y,
       },
       useLanczos3: Config.Media.Photo.useLanczos3,
+      maxDecodeMemory: Config.Media.Photo.maxDecodeMemory,
       quality: Config.Media.Photo.quality,
       smartSubsample: Config.Media.Photo.smartSubsample,
     } as MediaRendererInput;
@@ -283,6 +284,7 @@ export class PhotoProcessing {
       outPath,
       makeSquare,
       useLanczos3: Config.Media.Photo.useLanczos3,
+      maxDecodeMemory: Config.Media.Photo.maxDecodeMemory,
       quality: Config.Media.Photo.quality,
       smartSubsample: Config.Media.Photo.smartSubsample,
       sharpOptions: Config.Media.Photo.sharpOptions,
@@ -338,6 +340,7 @@ viewBox="${svgIcon.viewBox || '0 0 512 512'}">d="${svgIcon.items}</svg>`,
       makeSquare: false,
       animate: false,
       useLanczos3: Config.Media.Photo.useLanczos3,
+      maxDecodeMemory: Config.Media.Photo.maxDecodeMemory,
       quality: Config.Media.Photo.quality,
       smartSubsample: Config.Media.Photo.smartSubsample,
     } as SvgRendererInput;

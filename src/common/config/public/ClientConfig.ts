@@ -1340,6 +1340,17 @@ export class ClientPhotoConfig {
   concurrentThumbnailGenerationsLimit: number = 0;
 
   @ConfigProperty({
+    type: 'unsignedInt',
+    tags: {
+      name: $localize`Max memory to decode a photo`,
+      priority: ConfigPriority.underTheHood,
+      unit: 'MB',
+    },
+    description: 'Estimated memory needed to decode a photo before making its thumbnail. Photos above it are not rendered (an error names the photo) instead of possibly freezing a small server: progressive JPEGs, HEIC and PNG are decoded as a whole frame (about 7 bytes per pixel), baseline JPEGs as a stream. 0: no limit.',
+  })
+  maxDecodeMemory: number = 0;
+
+  @ConfigProperty({
     arrayType: 'string',
     tags: {
       name: $localize`Supported photo formats`,

@@ -60,6 +60,7 @@ export interface MediaRendererInput extends RendererInput {
   smartSubsample: boolean;
   sharpOptions: SharpOptions;
   animate: boolean; // animates the output. Used for Gifs
+  maxDecodeMemory?: number; // MB, 0 or unset: no limit (Media.Photo.maxDecodeMemory)
 }
 
 export interface SvgRendererInput extends RendererInput {
@@ -132,6 +133,37 @@ export class VideoRendererFactory {
 
 export class ImageRendererFactory {
 
+  /**
+   * Rough memory (MB) libvips needs to decode an image. Baseline JPEGs are
+   * decoded as a stream (shrink on load), so they cost little whatever their
+   * size; other formats (progressive JPEG, HEIC, PNG, ...) are decoded as a
+   * whole frame. Measured with the Debian libvips 8.16 build of sharp: 60 Mpx
+   * progressive JPEG ~400 MB, 24 Mpx HEIC ~145 MB, 64 Mpx baseline JPEG ~60 MB.
+   */
+  public static estimateDecodeMemory(metadata: Pick<Metadata, 'width' | 'height' | 'format' | 'isProgressive'>): number {
+    const pixels = (metadata.width || 0) * (metadata.height || 0);
+    const streamed = metadata.format === 'jpeg' && !metadata.isProgressive;
+    return pixels * (streamed ? 0.5 : 7) / (1024 * 1024);
+  }
+
+  /**
+   * On a small server, decoding a huge image can push the process over its
+   * memory limit and freeze it (e.g. a 60 Mpx progressive JPEG on a 1 GB
+   * VPS). Refuse it instead, when Media.Photo.maxDecodeMemory is set.
+   */
+  public static checkDecodeMemory(metadata: Pick<Metadata, 'width' | 'height' | 'format' | 'isProgressive'>,
+                                  maxDecodeMemory: number, mediaPath: string): void {
+    if (!maxDecodeMemory) {
+      return;
+    }
+    const needed = Math.round(ImageRendererFactory.estimateDecodeMemory(metadata));
+    if (needed > maxDecodeMemory) {
+      throw new Error('Not rendering ' + mediaPath + ': decoding it needs about ' + needed +
+        ' MB, more than Media.Photo.maxDecodeMemory (' + maxDecodeMemory + ' MB)');
+    }
+  }
+
+
   @ExtensionDecorator(e => e.gallery.ImageRenderer.render)
   public static async render(input: MediaRendererInput | SvgRendererInput, dryRun = false): Promise<void> {
 
@@ -153,6 +185,11 @@ export class ImageRendererFactory {
     }
     image.rotate();
     const metadata: Metadata = await image.metadata();
+    if ((input as MediaRendererInput).mediaPath) {
+      ImageRendererFactory.checkDecodeMemory(metadata,
+        (input as MediaRendererInput).maxDecodeMemory,
+        (input as MediaRendererInput).mediaPath);
+    }
     const kernel =
       input.useLanczos3 === true
         ? sharp.kernel.lanczos3

@@ -74,7 +74,7 @@ App CLI options:
   --Gallery-NavBar-enableDirectoryFlattening                                Adds a button to flatten the file structure, by listing the content of all subdirectories. (Won't work if the gallery has multiple folders with the same path.) (default: false)
   --Gallery-NavBar-defaultGidSize                                           Default grid size that is used to render photos and videos. (default: 'medium')
   --Gallery-NavBar-showItemCount                                            Shows the number photos and videos on the navigation bar. (default: true)
-  --Gallery-NavBar-links                                                    Visible links in the top menu. (default: [{"type":1},{"type":3},{"type":2}])
+  --Gallery-NavBar-links                                                    Visible links in the top menu. (default: [{"type":1},{"type":6},{"type":3},{"type":2}])
   --Gallery-NavBar-NavbarShowDelay                                          Ratio of the page height, you need to scroll to show the navigation bar. (default: 0.3)
   --Gallery-NavBar-NavbarHideDelay                                          Ratio of the page height, you need to scroll to hide the navigation bar. (default: 0.15)
   --Gallery-NavBar-showScrollUpButton                                       Set when the floating scroll-up button should be visible. (default: 'mobileOnly')
@@ -123,6 +123,7 @@ App CLI options:
   --Media-Photo-personThumbnailSize                                         Person (face) thumbnail size. (default: 200)
   --Media-Photo-thumbnailSizes                                              Size of the thumbnails and photo previews. The best matching size will be used (smaller for photo and video thumbnail, bigger for photo preview). More sizes give better quality, but use more storage and CPU to render. If size is 240, that shorter side of the thumbnail will be 240 pixels. (default: [320,540,1080,2160])
   --Media-Photo-concurrentThumbnailGenerationsLimit                         By default the app uses the number of cpus -1 concurrent threads to generate thumbnails. Set this number higher than 0 to limit the number of concurrent threads. (default: 0)
+  --Media-Photo-maxDecodeMemory                                             Estimated memory needed to decode a photo before making its thumbnail. Photos above it are not rendered (an error names the photo) instead of possibly freezing a small server: progressive JPEGs, HEIC and PNG are decoded as a whole frame (about 7 bytes per pixel), baseline JPEGs as a stream. 0: no limit. (default: 0)
   --Media-Photo-supportedFormats                                            Photo formats that are supported. Browser needs to support these formats natively. Also sharp (libvips) package should be able to convert these formats. (default: ["gif","jpeg","jpg","jpe","png","webp","svg","avif","heic","dng","arw","tiff"])
   --Media-Photo-useLanczos3                                                 if true, 'lanczos3' will used to scale photos, otherwise faster but lower quality 'nearest'. (default: true)
   --Media-Photo-quality                                                     Between 0-100. (default: 80)
@@ -263,7 +264,7 @@ Environmental variables:
   Gallery-NavBar-enableDirectoryFlattening                              Adds a button to flatten the file structure, by listing the content of all subdirectories. (Won't work if the gallery has multiple folders with the same path.) (default: false)
   Gallery-NavBar-defaultGidSize                                         Default grid size that is used to render photos and videos. (default: 'medium')
   Gallery-NavBar-showItemCount                                          Shows the number photos and videos on the navigation bar. (default: true)
-  Gallery-NavBar-links                                                  Visible links in the top menu. (default: [{"type":1},{"type":3},{"type":2}])
+  Gallery-NavBar-links                                                  Visible links in the top menu. (default: [{"type":1},{"type":6},{"type":3},{"type":2}])
   Gallery-NavBar-NavbarShowDelay                                        Ratio of the page height, you need to scroll to show the navigation bar. (default: 0.3)
   Gallery-NavBar-NavbarHideDelay                                        Ratio of the page height, you need to scroll to hide the navigation bar. (default: 0.15)
   Gallery-NavBar-showScrollUpButton                                     Set when the floating scroll-up button should be visible. (default: 'mobileOnly')
@@ -312,6 +313,7 @@ Environmental variables:
   Media-Photo-personThumbnailSize                                       Person (face) thumbnail size. (default: 200)
   Media-Photo-thumbnailSizes                                            Size of the thumbnails and photo previews. The best matching size will be used (smaller for photo and video thumbnail, bigger for photo preview). More sizes give better quality, but use more storage and CPU to render. If size is 240, that shorter side of the thumbnail will be 240 pixels. (default: [320,540,1080,2160])
   Media-Photo-concurrentThumbnailGenerationsLimit                       By default the app uses the number of cpus -1 concurrent threads to generate thumbnails. Set this number higher than 0 to limit the number of concurrent threads. (default: 0)
+  Media-Photo-maxDecodeMemory                                           Estimated memory needed to decode a photo before making its thumbnail. Photos above it are not rendered (an error names the photo) instead of possibly freezing a small server: progressive JPEGs, HEIC and PNG are decoded as a whole frame (about 7 bytes per pixel), baseline JPEGs as a stream. 0: no limit. (default: 0)
   Media-Photo-supportedFormats                                          Photo formats that are supported. Browser needs to support these formats natively. Also sharp (libvips) package should be able to convert these formats. (default: ["gif","jpeg","jpg","jpe","png","webp","svg","avif","heic","dng","arw","tiff"])
   Media-Photo-useLanczos3                                               if true, 'lanczos3' will used to scale photos, otherwise faster but lower quality 'nearest'. (default: true)
   Media-Photo-quality                                                   Between 0-100. (default: 80)
@@ -531,6 +533,9 @@ Environmental variables:
                     "type": "gallery"
                 },
                 {
+                    "type": "timeline"
+                },
+                {
                     "type": "albums"
                 },
                 {
@@ -695,6 +700,8 @@ Environmental variables:
             ],
             "//[concurrentThumbnailGenerationsLimit]": "By default the app uses the number of cpus -1 concurrent threads to generate thumbnails. Set this number higher than 0 to limit the number of concurrent threads.",
             "concurrentThumbnailGenerationsLimit": 0,
+            "//[maxDecodeMemory]": "Estimated memory needed to decode a photo before making its thumbnail. Photos above it are not rendered (an error names the photo) instead of possibly freezing a small server: progressive JPEGs, HEIC and PNG are decoded as a whole frame (about 7 bytes per pixel), baseline JPEGs as a stream. 0: no limit.",
+            "maxDecodeMemory": 0,
             "//[supportedFormats]": "Photo formats that are supported. Browser needs to support these formats natively. Also sharp (libvips) package should be able to convert these formats.",
             "supportedFormats": [
                 "gif",
