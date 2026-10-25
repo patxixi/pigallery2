@@ -8,6 +8,7 @@ import {AuthenticationMWs} from '../middlewares/user/AuthenticationMWs';
 import {CookieNames} from '../../common/CookieNames';
 import {ErrorCodes, ErrorDTO} from '../../common/entities/Error';
 import {UserDTO} from '../../common/entities/UserDTO';
+import {BuildInfoDTO} from '../../common/entities/BuildInfoDTO';
 import {ServerTimeEntry} from '../middlewares/ServerTimingMWs';
 import {QueryParams} from '../../common/QueryParams';
 import {PhotoProcessing} from '../model/fileaccess/fileprocessing/PhotoProcessing';
@@ -30,6 +31,26 @@ declare global {
 }
 
 export class PublicRouter {
+  private static buildInfo: BuildInfoDTO;
+
+  /**
+   * Version shown in the menu: release version, branch and commit of the build
+   * (written to package.json by the create-release task).
+   */
+  public static getBuildInfo(): BuildInfoDTO {
+    if (!PublicRouter.buildInfo) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const pkg = require(path.join(ProjectPath.Root, 'package.json'));
+      PublicRouter.buildInfo = {
+        version: pkg.version,
+        branch: pkg.buildBranch || '',
+        commit: (pkg.buildCommitHash || '').substring(0, 7),
+        time: pkg.buildTime || ''
+      };
+    }
+    return PublicRouter.buildInfo;
+  }
+
   public static route(app: Express): void {
     const setLocale = (req: Request, res: Response, next: NextFunction) => {
       let selectedLocale = req.locale;
@@ -99,6 +120,7 @@ export class PublicRouter {
       res.tpl.usedTheme = selectedTheme;
 
       res.tpl.UIExtensionConfigs = ObjectManagers.getInstance().ExtensionManager.getUIExtensionConfigs();
+      res.tpl.Build = PublicRouter.getBuildInfo();
 
       return next();
     };

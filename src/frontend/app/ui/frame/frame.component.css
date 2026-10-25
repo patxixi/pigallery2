@@ -83,3 +83,10 @@ a.dropdown-item span.badge, button.dropdown-item span.badge {
 .show-btn-scroll-up {
   right: 1em;
 }
+
+.build-label {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  white-space: nowrap;
+  user-select: all;
+}

@@ -204,6 +204,7 @@ gulp.task('copy-package', (): any =>
           optionalDependencies: { [key: string]: string };
           buildTime: string;
           buildCommitHash: string;
+          buildBranch: string;
         }): {
           devDependencies: { [p: string]: string };
           scripts: { [p: string]: string };
@@ -211,6 +212,7 @@ gulp.task('copy-package', (): any =>
           optionalDependencies: { [p: string]: string };
           buildTime: string;
           buildCommitHash: string;
+          buildBranch: string;
         } => {
           delete json.devDependencies;
           json.scripts = {start: 'node ./src/backend/index.js'};
@@ -242,6 +244,12 @@ gulp.task('copy-package', (): any =>
               .execSync('git rev-parse HEAD')
               .toString()
               .trim();
+            // a detached checkout has no branch name: it can be given by PG2_BUILD_BRANCH
+            const branch = process.env.PG2_BUILD_BRANCH || require('child_process')
+              .execSync('git rev-parse --abbrev-ref HEAD')
+              .toString()
+              .trim();
+            json.buildBranch = branch === 'HEAD' ? '' : branch;
             // eslint-disable-next-line no-empty
           } catch (e) {
           }

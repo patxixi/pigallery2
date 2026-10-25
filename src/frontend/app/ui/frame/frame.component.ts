@@ -18,6 +18,7 @@ import {LoadingBarModule} from '@ngx-loading-bar/core';
 import {IconComponent} from '../../icon.component';
 import {CollapseDirective} from 'ngx-bootstrap/collapse';
 import {NgFor, NgIf, NgSwitch, NgSwitchCase} from '@angular/common';
+import {BuildInfoDTO} from '../../../../common/entities/BuildInfoDTO';
 import {GallerySearchComponent} from '../gallery/search/search.gallery.component';
 import {GalleryShareComponent} from '../gallery/share/share.gallery.component';
 import {NgIconComponent} from '@ng-icons/core';
@@ -25,6 +26,12 @@ import {FormsModule} from '@angular/forms';
 import {GalleryService} from '../gallery/gallery.service';
 import {UploaderService} from '../gallery/uploader/uploader.service';
 import {SearchQueryUtils} from '../../../../common/SearchQueryUtils';
+
+/* Injected from server side */
+// eslint-disable-next-line @typescript-eslint/prefer-namespace-keyword, @typescript-eslint/no-namespace
+declare module ServerInject {
+  export let Build: BuildInfoDTO;
+}
 
 @Component({
   selector: 'app-frame',
@@ -63,6 +70,7 @@ export class FrameComponent {
   public readonly themesEnabled = Config.Gallery.Themes.enabled;
   public readonly svgIcon = Config.Server.svgIcon;
   public shouldHideNavbar = false;
+  public readonly buildLabel = FrameComponent.getBuildLabel();
   public navbarKeepTop = true;
   public animateNavbar = false;
   public fixNavbarOnTop = false;
@@ -91,6 +99,19 @@ export class FrameComponent {
   ) {
     this.enableScrollUpButton = Config.Gallery.NavBar.showScrollUpButton === ScrollUpModes.always || (Config.Gallery.NavBar.showScrollUpButton === ScrollUpModes.mobileOnly && !this.deviceService.isDesktop());
     this.user = this.authService.user;
+  }
+
+  /**
+   * e.g.: "PiGallery2 3.6.0-edge · vps-redesign@df04ae0 · 2026-10-25"
+   */
+  static getBuildLabel(): string {
+    const b = typeof ServerInject !== 'undefined' ? ServerInject.Build : null;
+    if (!b || !b.version) {
+      return null;
+    }
+    const source = [b.branch, b.commit].filter(x => !!x).join('@');
+    return ['PiGallery2 ' + b.version, source, (b.time || '').substring(0, 10)]
+      .filter(x => !!x).join(' · ');
   }
 
   isAdmin(): boolean {
