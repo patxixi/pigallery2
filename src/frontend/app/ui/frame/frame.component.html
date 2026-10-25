@@ -41,7 +41,7 @@
             <li class="flex-grow-1"></li>
             <ng-content select="[navbar]"></ng-content>
             <li class="nav-item w-100" *ngIf="showSearch">
-              <app-gallery-search></app-gallery-search>
+              <app-gallery-search [target]="searchTarget"></app-gallery-search>
             </li>
             <li class="nav-item d-xl-block d-none" *ngIf="showShare">
               <app-gallery-share></app-gallery-share>

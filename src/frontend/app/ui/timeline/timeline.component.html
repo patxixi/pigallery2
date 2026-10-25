@@ -1,4 +1,4 @@
-<app-frame>
+<app-frame [showSearch]="showSearchBar" searchTarget="timeline">
   <div body class="timeline-body">
     <div *ngIf="filter" class="timeline-filter">
       <ng-icon [name]="filterIsPerson ? 'ionPersonOutline' : 'ionSearchOutline'"></ng-icon>

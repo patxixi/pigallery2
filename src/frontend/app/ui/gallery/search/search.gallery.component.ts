@@ -1,6 +1,6 @@
-import {Component, OnDestroy, TemplateRef} from '@angular/core';
+import {Component, Input, OnDestroy, OnInit, TemplateRef} from '@angular/core';
 import {AutoCompleteService} from './autocomplete.service';
-import {ActivatedRoute, Params, Router, RouterLink} from '@angular/router';
+import {ActivatedRoute, ParamMap, Params, Router, RouterLink} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {QueryParams} from '../../../../../common/QueryParams';
 import {MetadataSearchQueryTypes, SearchQueryDTO, SearchQueryTypes, TextSearch,} from '../../../../../common/entities/SearchQueryDTO';
@@ -35,7 +35,9 @@ import {SearchQueryUtils} from '../../../../../common/SearchQueryUtils';
     SavedSearchPopupComponent,
   ]
 })
-export class GallerySearchComponent implements OnDestroy {
+export class GallerySearchComponent implements OnInit, OnDestroy {
+  // 'timeline': a search filters the timeline (?q=) instead of opening the search page
+  @Input() target: 'search' | 'timeline' = 'search';
   public searchQueryDTO: SearchQueryDTO = {
     type: SearchQueryTypes.any_text,
     value: '',
@@ -50,6 +52,7 @@ export class GallerySearchComponent implements OnDestroy {
   public saveSearchName = '';
   private searchModalRef: BsModalRef;
   private readonly subscription: Subscription = null;
+  private timelineSubscription: Subscription = null;
   private saveSearchModalRef: BsModalRef;
 
   constructor(
@@ -89,9 +92,25 @@ export class GallerySearchComponent implements OnDestroy {
     return SearchQueryUtils.urlify(this.searchQueryDTO);
   }
 
+  ngOnInit(): void {
+    if (this.target !== 'timeline') {
+      return;
+    }
+    // Show the filter of the timeline in the field (e.g. a person opened from the faces)
+    this.timelineSubscription = this.route.queryParamMap.subscribe((params: ParamMap): void => {
+      const q = params.get(QueryParams.gallery.timeline.query);
+      this.searchQueryDTO = q ? SearchQueryUtils.parseURLifiedQuery(q) :
+        {type: SearchQueryTypes.any_text, value: ''} as TextSearch;
+      this.onQueryChange();
+    });
+  }
+
   ngOnDestroy(): void {
     if (this.subscription !== null) {
       this.subscription.unsubscribe();
+    }
+    if (this.timelineSubscription !== null) {
+      this.timelineSubscription.unsubscribe();
     }
   }
 
@@ -140,6 +159,13 @@ export class GallerySearchComponent implements OnDestroy {
   }
 
   Search(): void {
+    if (this.target === 'timeline') {
+      const empty = this.searchQueryDTO.type === SearchQueryTypes.any_text && !(this.searchQueryDTO as TextSearch).value;
+      this.router
+        .navigate(['/timeline'], {queryParams: empty ? {} : {[QueryParams.gallery.timeline.query]: this.HTMLSearchQuery}})
+        .catch(console.error);
+      return;
+    }
     this.router
       .navigate(['/search', this.HTMLSearchQuery])
       .catch(console.error);

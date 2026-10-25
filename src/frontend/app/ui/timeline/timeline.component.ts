@@ -68,6 +68,7 @@ interface YearMark {
  * anywhere, and only the months around the viewport are loaded (one date
  * range search per month) and rendered.
  */
+import {AuthenticationService} from '../../model/network/authentication.service';
 @Component({
   selector: 'app-timeline',
   templateUrl: './timeline.component.html',
@@ -93,6 +94,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
   public error: string = null;
   /** Optional search filter (?q=, e.g. a person), shown above the timeline. */
   public filter: SearchQueryDTO = null;
+  public showSearchBar = false;
   public filterLabel = '';
   public filterIsPerson = false;
   public totalCount = '';
@@ -130,8 +132,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
     private lightboxService: LightboxService,
     private route: ActivatedRoute,
     public selection: SelectionService,
+    private authService: AuthenticationService,
     @Inject(LOCALE_ID) locale: string
   ) {
+    this.showSearchBar = this.authService.canSearch();
     // Same place as before only when coming back (lightbox closed, browser
     // back) or reloading the page; from a menu link, start from the top.
     const nav = this.router.getCurrentNavigation();

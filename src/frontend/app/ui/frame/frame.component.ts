@@ -59,6 +59,8 @@ declare module ServerInject {
 })
 export class FrameComponent {
   @Input() showSearch = false;
+  // Where a search leads: the search results page, or the timeline filtered by it.
+  @Input() searchTarget: 'search' | 'timeline' = 'search';
   @Input() showShare = false;
   public readonly user: BehaviorSubject<UserDTO>;
   public readonly authenticationRequired = Config.Users.authenticationRequired;
