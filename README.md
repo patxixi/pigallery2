@@ -5,6 +5,11 @@ gallery running next to [OpenCloud](https://opencloud.eu/) on very small VPSs (1
 from an S3 bucket through rclone). The branch `vps-redesign` follows upstream `master` with a small set of commits on top
 (rebased regularly). The upstream README follows below.
 
+**Native installation.** This fork runs natively, without Docker: Node.js 22, a release built against the Debian
+libvips (HEIC support), a systemd service with memory and CPU limits, behind nginx. Upstream recommends Docker and
+states that the native installation is not officially supported; this fork keeps it working and tests it on every
+release (see the notes for small servers below).
+
 ### Changes compared to upstream `master`
 
 | Area | Change | Upstream status |
