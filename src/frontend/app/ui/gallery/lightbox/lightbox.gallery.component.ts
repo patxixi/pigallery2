@@ -52,6 +52,9 @@ export class GalleryLightboxComponent implements OnDestroy, OnInit {
 
   public navigation = {hasPrev: true, hasNext: true};
   public blackCanvasOpacity = 0;
+  // Pull down to close: how far the finger pulled the media down (px).
+  public dismissY = 0;
+  public dismissDragging = false;
   public activePhoto: GalleryPhotoComponent;
   public status: LightboxStates = LightboxStates.Closed;
   public infoPanelVisible = false;
@@ -282,6 +285,35 @@ export class GalleryLightboxComponent implements OnDestroy, OnInit {
     this.blackCanvasOpacity = 1.0;
     this.showPhoto(this.gridPhotoQL.toArray().indexOf(selectedPhoto), false);
     this.piTitleService.setMediaTitle(selectedPhoto.gridMedia);
+  }
+
+  /** 0 to 1: how far the pull down is, for the scale and the background. */
+  public get dismissProgress(): number {
+    if (!this.dismissY || !this.photoFrameDim.height) {
+      return 0;
+    }
+    return Math.min(1, this.dismissY / (this.photoFrameDim.height * 0.6));
+  }
+
+  public get dismissTransform(): string {
+    if (!this.dismissY) {
+      return null;
+    }
+    return 'translateY(' + this.dismissY + 'px) scale(' + (1 - 0.3 * this.dismissProgress) + ')';
+  }
+
+  public onDismissMove(y: number): void {
+    this.dismissDragging = true;
+    this.dismissY = y;
+  }
+
+  /** Release of a pull down: close (back to the grid) or spring back. */
+  public onDismissEnd(close: boolean): void {
+    this.dismissDragging = false;
+    this.dismissY = 0;
+    if (close) {
+      this.hide();
+    }
   }
 
   public hide(): void {

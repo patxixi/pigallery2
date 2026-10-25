@@ -1,10 +1,16 @@
 <div [hidden]="!isVisible()" #root>
 
   <div class="blackCanvas"
-       [style.opacity]="blackCanvasOpacity">
+       [class.dragging]="dismissDragging"
+       [style.opacity]="blackCanvasOpacity * (1 - dismissProgress)">
   </div>
 
-  <div class="lightbox" #lightbox>
+  <!-- Pull down to close moves the whole frame: the media host element is
+       inline, a transform on it is ignored; the controls fade meanwhile. -->
+  <div class="lightbox" #lightbox
+       [class.dismissing]="dismissY > 0"
+       [class.dismiss-release]="!dismissDragging"
+       [style.transform]="dismissTransform">
     <app-gallery-lightbox-media [gridMedia]="activePhoto ? activePhoto.gridMedia : null"
                                 [nextGridMedia]="NexGridMedia"
                                 [loadMedia]="!animating"
@@ -42,6 +48,8 @@
       [navigation]="navigation"
       (nextPhoto)="nextImage()"
       (previousPhoto)="prevImage()"
+      (dismissMove)="onDismissMove($event)"
+      (dismissEnd)="onDismissEnd($event)"
       (toggleInfoPanel)="toggleInfoPanel()"
       (toggleFullScreen)="toggleFullscreen()"
       [photoFrameDim]="photoFrameDim"

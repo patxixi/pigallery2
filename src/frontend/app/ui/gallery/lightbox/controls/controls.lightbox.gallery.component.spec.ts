@@ -94,6 +94,67 @@ describe('ControlsLightboxComponent - cursor visibility', () => {
     expect(swipeable.classList.contains('hide-cursor')).toBe(false);
   });
 
+  describe('pull down to close', () => {
+    let moves: number[];
+    let ends: boolean[];
+    const pan = (deltaX: number, deltaY: number, isFinal = false, velocityY = 0) =>
+      component.pan({deltaX, deltaY, isFinal, velocityY});
+
+    beforeEach(() => {
+      moves = [];
+      ends = [];
+      component.dismissMove.subscribe((y: number) => moves.push(y));
+      component.dismissEnd.subscribe((close: boolean) => ends.push(close));
+      component.activePhoto = {
+        gridMedia: {isVideo: () => false, media: {metadata: {size: {width: 400, height: 800}}}},
+      } as any;
+      component.photoFrameDim = {width: 400, height: 800, aspect: 0.5};
+    });
+
+    it('should follow the finger and close past the threshold', () => {
+      pan(2, 20);
+      pan(3, 120);
+      pan(3, 200, true);
+      expect(moves).toEqual([20, 120]);
+      expect(ends).toEqual([true]);
+    });
+
+    it('should spring back after a short slow pull', () => {
+      pan(0, 30);
+      pan(0, 60, true, 0.1);
+      expect(ends).toEqual([false]);
+    });
+
+    it('should close on a short but fast flick', () => {
+      pan(0, 30);
+      pan(0, 60, true, 1.2);
+      expect(ends).toEqual([true]);
+    });
+
+    it('should leave a sideways swipe alone, even if it drifts down', () => {
+      pan(40, 10);
+      pan(150, 90);
+      pan(200, 120, true);
+      expect(moves).toEqual([]);
+      expect(ends).toEqual([]);
+    });
+
+    it('should decide again on the next gesture', () => {
+      pan(40, 0);
+      pan(80, 0, true);
+      pan(0, 40);
+      expect(moves).toEqual([40]);
+    });
+
+    it('should not pull down while zoomed in (the pan moves the photo)', () => {
+      component.zoom = 2;
+      pan(0, 300);
+      pan(0, 400, true, 2);
+      expect(moves).toEqual([]);
+      expect(ends).toEqual([]);
+    });
+  });
+
   describe('extension media buttons', () => {
     const button = {
       name: 'add to favorites',

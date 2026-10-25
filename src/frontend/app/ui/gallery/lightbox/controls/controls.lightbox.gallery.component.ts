@@ -40,6 +40,10 @@ import {SafeHtmlPipe} from '../../../../pipes/SafeHTMLPipe';
 })
 export class ControlsLightboxComponent implements OnDestroy, OnChanges {
   readonly MAX_ZOOM = 10;
+  // A pull down closes past this share of the screen height, or when faster
+  // than this (px/ms, as given by Hammer).
+  static readonly DISMISS_DISTANCE = 0.18;
+  static readonly DISMISS_VELOCITY = 0.5;
   @ViewChild('canvas')
   canvas: ElementRef<HTMLCanvasElement>;
   @ViewChild('root', {static: false}) root: ElementRef;
@@ -48,6 +52,10 @@ export class ControlsLightboxComponent implements OnDestroy, OnChanges {
   @Output() toggleFullScreen = new EventEmitter();
   @Output() nextPhoto = new EventEmitter();
   @Output() previousPhoto = new EventEmitter();
+  // Pull down to close (phone gesture): offset of the finger while pulling,
+  // then whether the release closes the lightbox (true) or springs back.
+  @Output() dismissMove = new EventEmitter<number>();
+  @Output() dismissEnd = new EventEmitter<boolean>();
   @Input() navigation = {hasPrev: true, hasNext: true};
   @Input() activePhoto: GalleryPhotoComponent;
   @Input() mediaElement: GalleryLightboxMediaComponent;
@@ -66,6 +74,7 @@ export class ControlsLightboxComponent implements OnDestroy, OnChanges {
   private timerSub: Subscription;
   private prevDrag = {x: 0, y: 0};
   private prevZoom = 1;
+  private panGesture: 'dismiss' | 'other' = null;
 
   constructor(
     public lightboxService: LightboxService,
@@ -146,7 +155,10 @@ export class ControlsLightboxComponent implements OnDestroy, OnChanges {
     }
   }
 
-  pan($event: { deltaY: number; deltaX: number; isFinal: boolean }): void {
+  pan($event: { deltaY: number; deltaX: number; isFinal: boolean; velocityY?: number }): void {
+    if (this.zoom === 1 && this.activePhoto && this.dismissPan($event)) {
+      return;
+    }
     if (!this.activePhoto || this.activePhoto.gridMedia.isVideo()) {
       return;
     }
@@ -163,6 +175,34 @@ export class ControlsLightboxComponent implements OnDestroy, OnChanges {
         y: this.drag.y,
       };
     }
+  }
+
+  /**
+   * Pull down to close, unzoomed only: the first move of a pan decides whether
+   * it is a pull down (mostly downwards) or something else (left/right swipe,
+   * pull up), so a sideways swipe never moves the photo down.
+   * @returns true if the pan was used for it
+   */
+  private dismissPan($event: { deltaY: number; deltaX: number; isFinal: boolean; velocityY?: number }): boolean {
+    if (!this.panGesture) {
+      this.panGesture = $event.deltaY > 0 && Math.abs($event.deltaY) > Math.abs($event.deltaX) ? 'dismiss' : 'other';
+    }
+    const dismiss = this.panGesture === 'dismiss';
+    if ($event.isFinal) {
+      this.panGesture = null;
+    }
+    if (!dismiss) {
+      return false;
+    }
+    if ($event.isFinal) {
+      this.dismissEnd.emit(
+        $event.deltaY > this.photoFrameDim.height * ControlsLightboxComponent.DISMISS_DISTANCE ||
+        ($event.velocityY || 0) > ControlsLightboxComponent.DISMISS_VELOCITY
+      );
+    } else {
+      this.dismissMove.emit(Math.max(0, $event.deltaY));
+    }
+    return true;
   }
 
   wheel($event: { deltaX: number, deltaY: number }): void {

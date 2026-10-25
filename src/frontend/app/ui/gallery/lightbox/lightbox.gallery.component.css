@@ -46,3 +46,18 @@ app-info-panel {
 ng-icon.h2 ::ng-deep svg {
   vertical-align: bottom;
 }
+
+/* Pull down to close: the media follows the finger without delay, then
+   springs back or shrinks to its tile; the controls fade while pulling. */
+.blackCanvas.dragging {
+  transition: none;
+}
+
+.lightbox.dismiss-release {
+  transition: transform 0.2s ease-out;
+}
+
+.lightbox.dismissing app-lightbox-controls {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
