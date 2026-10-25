@@ -1,6 +1,6 @@
 # PiGallery2 — `vps-redesign` fork
 
-This is a fork of [bpatrik/pigallery2](https://github.com/bpatrik/pigallery2), maintained for a family photo
+This is a fork of [bpatrik/pigallery2](https://github.com/bpatrik/pigallery2), maintained for an online photo
 gallery running next to [OpenCloud](https://opencloud.eu/) on very small VPSs (1 vCPU, 1 GB RAM, photos read
 from an S3 bucket through rclone). The branch `vps-redesign` follows upstream `master` with a small set of commits on top
 (rebased regularly). The upstream README follows below.
