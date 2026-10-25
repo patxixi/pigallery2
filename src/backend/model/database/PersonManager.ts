@@ -1,6 +1,7 @@
 import {SQLConnection} from './SQLConnection';
 import {PersonEntry} from './enitites/person/PersonEntry';
 import {PersonDTO} from '../../../common/entities/PersonDTO';
+import {FaceRegion} from '../../../common/entities/PhotoDTO';
 import {Logger} from '../../Logger';
 import {SQL_COLLATE} from './enitites/EntityUtils';
 import {PersonJunctionTable} from './enitites/person/PersonJunctionTable';
@@ -88,6 +89,31 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
     }
   }
 
+  /**
+   * The sample (junction id) to show for a person: best rated, then the
+   * largest face of that person in pixels, then the newest photo.
+   */
+  public static pickSample(candidates: { id: number, rating: number, date: number, faces: string | FaceRegion[] }[],
+                           personName: string): number {
+    let best: { id: number, rating: number, area: number, date: number } = null;
+    for (const c of candidates) {
+      let faces: FaceRegion[] = [];
+      try {
+        faces = (typeof c.faces === 'string' ? JSON.parse(c.faces) : c.faces) || [];
+      } catch (e) {
+        // unreadable faces: area 0
+      }
+      const box = faces.find(f => f.name === personName)?.box;
+      const cur = {id: c.id, rating: c.rating || 0, area: box ? box.width * box.height : 0, date: Number(c.date) || 0};
+      if (!best ||
+        cur.rating > best.rating ||
+        (cur.rating === best.rating && (cur.area > best.area || (cur.area === best.area && cur.date > best.date)))) {
+        best = cur;
+      }
+    }
+    return best ? best.id : null;
+  }
+
   protected async invalidateDBCache(changedDir?: ParentDirectoryDTO): Promise<void> {
     if (!changedDir || !changedDir.id) {
       await this.invalidateAllDBCache();
@@ -166,7 +192,7 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
       .createQueryBuilder('person')
       .leftJoin('person.cache', 'cache', 'cache.projectionKey = :projectionKey', {projectionKey})
       .where('cache.id IS NULL OR cache.valid = false')
-      .select(['person.id'])
+      .select(['person.id', 'person.name'])
       .getMany();
 
     if (personsNeedingUpdate.length === 0) {
@@ -200,9 +226,13 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
         .select(['pjt.person as personId', 'COUNT(*) as count'])
         .groupBy('pjt.person')
         .getRawMany();
-      // Compute sample regions per person (best rated/newest photo)
+      // Compute sample regions per person: best rated, then the largest face
+      // in pixels (a small face in a group photo gives a blurry thumbnail),
+      // then the newest photo.
       // Use individual queries per person to ensure compatibility with older SQLite versions
       const topSamples: Record<number, number> = {};
+      const names: Record<number, string> = {};
+      batch.forEach(p => names[p.id] = p.name);
       for (const personId of personIds) {
         const sampleQb = connection
           .getRepository(PersonJunctionTable)
@@ -218,15 +248,15 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
           sampleQb.andWhere(session.projectionQuery);
         }
 
-        const sampleResult = await sampleQb
-          .select('pjt.id')
-          .orderBy('media.metadataRating', 'DESC')
-          .addOrderBy('media.metadataCreationdate', 'DESC')
-          .limit(1)
-          .getOne();
-
-        if (sampleResult) {
-          topSamples[personId] = sampleResult.id;
+        const candidates: { id: number, rating: number, date: number, faces: string }[] = await sampleQb
+          .select('pjt.id', 'id')
+          .addSelect('media.metadataRating', 'rating')
+          .addSelect('media.metadataCreationdate', 'date')
+          .addSelect('media.metadataFaces', 'faces')
+          .getRawMany();
+        const best = PersonManager.pickSample(candidates, names[personId]);
+        if (best !== null) {
+          topSamples[personId] = best;
         }
       }
 

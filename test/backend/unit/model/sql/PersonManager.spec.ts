@@ -506,3 +506,37 @@ describe('PersonManager', (sqlHelper: DBTestHelper) => {
   });
 
 });
+
+
+describe('PersonManager.pickSample', () => {
+  const face = (name: string, width: number, height: number) => ({name, box: {width, height, left: 0, top: 0}});
+  const row = (id: number, rating: number, date: number, faces: unknown[]) =>
+    ({id, rating, date, faces: JSON.stringify(faces)});
+
+  it('should prefer the photo where the person\'s face is the largest', () => {
+    expect(PersonManager.pickSample([
+      row(1, 0, 3000, [face('Eric', 80, 100), face('Anna', 900, 900)]),
+      row(2, 0, 1000, [face('Eric', 270, 360)]),
+      row(3, 0, 2000, [face('Eric', 200, 200)]),
+    ], 'Eric')).to.equal(2);
+  });
+
+  it('should still put the rating first, then the date between equal faces', () => {
+    expect(PersonManager.pickSample([
+      row(1, 0, 1000, [face('Eric', 500, 500)]),
+      row(2, 4, 1000, [face('Eric', 50, 50)]),
+    ], 'Eric')).to.equal(2);
+    expect(PersonManager.pickSample([
+      row(1, null, 1000, [face('Eric', 100, 100)]),
+      row(2, null, 2000, [face('Eric', 100, 100)]),
+    ], 'Eric')).to.equal(2);
+  });
+
+  it('should cope with missing or unreadable faces', () => {
+    expect(PersonManager.pickSample([], 'Eric')).to.equal(null);
+    expect(PersonManager.pickSample([
+      {id: 1, rating: 0, date: 1, faces: 'not json'},
+      {id: 2, rating: 0, date: 2, faces: null},
+    ], 'Eric')).to.equal(2);
+  });
+});
