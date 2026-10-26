@@ -534,7 +534,7 @@ describe('PersonManager.pickSample', () => {
 
   it('should prefer a whole face, alone in the crop and not a close-up, over a larger one', () => {
     const at = (name: string, left: number, top: number, side: number) => ({name, box: {width: side, height: side, left, top}});
-    const photo = (id: number, faces: unknown[]) => ({id, rating: 0, date: id, faces, width: 4000, height: 3000});
+    const photo = (id: number, faces: unknown[]) => ({id, rating: 0, date: id, faces: JSON.stringify(faces), width: 4000, height: 3000});
     expect(PersonManager.pickSample([
       photo(1, [at('Eric', 0, 0, 1500)]), // cut by the edge of the photo
       photo(2, [at('Eric', 1000, 800, 2000)]), // close-up selfie
