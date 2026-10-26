@@ -545,7 +545,7 @@ describe('PersonManager.pickSample', () => {
   });
 
   it('should take the photo given in person-samples.json when it shows the person', () => {
-    const c = (id: number, path: string) => ({id, rating: 0, date: 0, path, width: 4000, height: 3000,
+    const c = (id: number, path: string) => ({id, rating: 0, date: id, path, width: 4000, height: 3000,
       faces: [{name: 'Eric', box: {width: 600, height: 600, left: 1000 + id, top: 1000}}]});
     expect(PersonManager.pickSample([c(1, 'a/1.jpg'), c(2, 'a/2.jpg')], 'Eric', 'a/1.jpg')).to.equal(1);
     expect(PersonManager.pickSample([c(1, 'a/1.jpg'), c(2, 'a/2.jpg')], 'Eric', 'b/gone.jpg')).to.equal(2);
