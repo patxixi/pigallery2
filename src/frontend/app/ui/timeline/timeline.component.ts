@@ -194,8 +194,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
   /**
    * Back to the kept timeline (photo closed): as it was, where it was.
    * The page that showed the photo leaves the DOM a few frames later (its
-   * leave animations): until then the timeline sits below it, so scrolling
-   * and rendering wait for it to be back in place.
+   * leave animations): until then the timeline sits below it, so the scroll
+   * is shifted by that page's height (the timeline shows at its place from
+   * the first frame), and rendering waits for the timeline to be back in
+   * place.
    */
   private resume(frames = 30): void {
     if (frames === 30) {
@@ -203,13 +205,21 @@ export class TimelineComponent implements OnInit, OnDestroy {
       this.piTitleService.setTitle(this.filterLabel || $localize`Timeline`);
       this.lightboxService.backOnCloseUrl = null;
     }
-    if (this.containerTop() > this.pausedTop + 1 && frames > 0) {
+    const scrollY = this.timelineService.getScrollY(this.filter);
+    const shift = this.containerTop() - this.pausedTop;
+    if (shift > 1 && frames > 0) {
+      TimelineComponent.jumpTo(scrollY + shift);
       requestAnimationFrame(() => this.resume(frames - 1));
       return;
     }
     this.zone.runOutsideAngular(() => window.addEventListener('scroll', this.onScroll, {passive: true}));
-    PageHelper.ScrollY = this.timelineService.getScrollY(this.filter);
+    TimelineComponent.jumpTo(scrollY);
     this.update();
+  }
+
+  /** Scrolls at once: Bootstrap makes the page scroll smoothly, which showed the timeline gliding back. */
+  private static jumpTo(y: number): void {
+    window.scrollTo({top: y, left: 0, behavior: 'instant' as ScrollBehavior});
   }
 
   private async show(filter: SearchQueryDTO): Promise<void> {
@@ -237,7 +247,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.loading = false;
     this.layout();
     this.cd.detectChanges();
-    PageHelper.ScrollY = this.restoreScroll ? this.timelineService.getScrollY(filter) : 0;
+    TimelineComponent.jumpTo(this.restoreScroll ? this.timelineService.getScrollY(filter) : 0);
     this.restoreScroll = false;
     this.update();
   }
