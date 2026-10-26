@@ -111,8 +111,9 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
    * Picks the face shown as the person's portrait. A path listed for the
    * person in <dbFolder>/person-samples.json wins (written by an external
    * face analysis, see README). Otherwise: best rated, then a usable face
-   * (whole face with its margin inside the photo, no other face in the crop,
-   * not a close-up, at least 200 px), then the largest face, then the newest.
+   * (whole face with its margin inside the photo, at most a sliver of another
+   * face in the crop, not a close-up, at least 200 px), then the largest face,
+   * then the newest.
    */
   public static pickSample(candidates: SampleCandidate[], personName: string, preferredPath?: string): number {
     const margin = Config.Media.Photo.personFaceMargin / 2;
@@ -138,9 +139,15 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
           bottom: box.top + box.height * (1 + margin),
         };
         framed = cut.left >= 0 && cut.top >= 0 && cut.right <= c.width && cut.bottom <= c.height;
-        alone = !faces.some(f => f !== face && f.box &&
-          f.box.left < cut.right && f.box.left + f.box.width > cut.left &&
-          f.box.top < cut.bottom && f.box.top + f.box.height > cut.top);
+        // a sliver of a neighbour's face in the crop is fine
+        alone = !faces.some(f => {
+          if (f === face || !f.box) {
+            return false;
+          }
+          const w = Math.min(cut.right, f.box.left + f.box.width) - Math.max(cut.left, f.box.left);
+          const h = Math.min(cut.bottom, f.box.top + f.box.height) - Math.max(cut.top, f.box.top);
+          return w > 0 && h > 0 && w * h > PersonManager.NEIGHBOUR_SHARE * f.box.width * f.box.height;
+        });
         closeUp = Math.max(box.width / c.width, box.height / c.height) > PersonManager.CLOSE_UP_RATIO;
       }
       const usable = framed && alone && !closeUp && area >= PersonManager.MIN_FACE_SIDE * PersonManager.MIN_FACE_SIDE;
@@ -155,6 +162,7 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
 
   private static readonly CLOSE_UP_RATIO = 0.35;
   private static readonly MIN_FACE_SIDE = 200;
+  private static readonly NEIGHBOUR_SHARE = 0.3;
 
   private static compareKeys(a: number[], b: number[]): number {
     for (let i = 0; i < a.length; ++i) {
