@@ -152,7 +152,7 @@
        [class.hide-cursor]="controllersDimmed"
        (swipeleft)="zoom == 1 && nextPhoto.emit()"
        (swiperight)="zoom == 1 && previousPhoto.emit()"
-       (swipeup)="zoom == 1 && closed.emit()"
+       (swipeup)="zoom == 1 && share()"
        (tap)="tap($event)"
        (pan)="pan($any($event))"
        (wheel)="wheel($event)"
@@ -277,6 +277,13 @@
            [(ngModel)]="mediaElement.VideoVolume" min="0" max="1" step="0.1"
            value="1" class="col-2 col-md-1 volume rounded">
   </div>
+
+  <!-- swipe up: the phone refused to open its share sheet without a tap -->
+  <button *ngIf="shareFile" type="button" class="btn btn-light share-button"
+          (click)="shareNow()">
+    <ng-icon class="me-2" name="ionShareSocialOutline"></ng-icon>
+    <span i18n>Share</span>
+  </button>
 
 
 </div>
