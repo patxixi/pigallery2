@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import {
+  RouteReuseStrategy,
   RouterModule,
   Routes,
   UrlMatchResult,
@@ -16,6 +17,7 @@ import { AuthGuard } from './model/network/helper/auth.guard';
 import { AlbumsComponent } from './ui/albums/albums.component';
 import { ErrorComponent } from './ui/error/error.component';
 import { TimelineComponent } from './ui/timeline/timeline.component';
+import { TimelineReuseStrategy } from './ui/timeline/timeline-reuse.strategy';
 
 export function galleryMatcherFunction(
   segments: UrlSegment[]
@@ -106,5 +108,6 @@ const routes: Routes = [
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
+  providers: [{provide: RouteReuseStrategy, useClass: TimelineReuseStrategy}],
 })
 export class AppRoutingModule {}

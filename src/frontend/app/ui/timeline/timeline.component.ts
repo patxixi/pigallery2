@@ -13,7 +13,17 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import {ActivatedRoute, ParamMap, Router, RouterLink} from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  ParamMap,
+  Router,
+  RouterLink,
+} from '@angular/router';
+import {TimelineReuseStrategy} from './timeline-reuse.strategy';
 import {Subscription} from 'rxjs';
 import {NgFor, NgIf} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
@@ -122,6 +132,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
   private updateScheduled = false;
   private restoreScroll: boolean;
   private routeSubscription: Subscription = null;
+  private navigationSubscription: Subscription = null;
+  // Kept aside while a photo opened from here is shown (TimelineReuseStrategy).
+  private paused = false;
+  private pausedTop = 0;
 
   constructor(
     private timelineService: TimelineService,
@@ -153,9 +167,49 @@ export class TimelineComponent implements OnInit, OnDestroy {
     window.addEventListener('pagehide', this.onPageHide);
     // The same component shows every filter: reload when ?q= changes.
     this.routeSubscription = this.route.queryParamMap.subscribe((params: ParamMap) => {
+      if (this.paused) {
+        return;
+      }
       this.show(SearchQueryUtils.parseURLifiedQuery(params.get(QueryParams.gallery.timeline.query)))
         .catch(console.error);
     });
+    this.navigationSubscription = this.router.events.subscribe((e) => {
+      if (e instanceof NavigationStart && !this.paused && !e.url.startsWith('/timeline')) {
+        this.pause();
+      } else if ((e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError) &&
+        this.paused && this.router.url.startsWith('/timeline')) {
+        // back to it, or the navigation away did not happen
+        this.resume();
+      }
+    });
+  }
+
+  /** Leaving the timeline: it may be kept, it must not follow the next page's scroll. */
+  private pause(): void {
+    this.paused = true;
+    this.pausedTop = this.containerTop();
+    window.removeEventListener('scroll', this.onScroll);
+  }
+
+  /**
+   * Back to the kept timeline (photo closed): as it was, where it was.
+   * The page that showed the photo leaves the DOM a few frames later (its
+   * leave animations): until then the timeline sits below it, so scrolling
+   * and rendering wait for it to be back in place.
+   */
+  private resume(frames = 30): void {
+    if (frames === 30) {
+      this.paused = false;
+      this.piTitleService.setTitle(this.filterLabel || $localize`Timeline`);
+      this.lightboxService.backOnCloseUrl = null;
+    }
+    if (this.containerTop() > this.pausedTop + 1 && frames > 0) {
+      requestAnimationFrame(() => this.resume(frames - 1));
+      return;
+    }
+    this.zone.runOutsideAngular(() => window.addEventListener('scroll', this.onScroll, {passive: true}));
+    PageHelper.ScrollY = this.timelineService.getScrollY(this.filter);
+    this.update();
   }
 
   private async show(filter: SearchQueryDTO): Promise<void> {
@@ -192,6 +246,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('pagehide', this.onPageHide);
     this.routeSubscription?.unsubscribe();
+    this.navigationSubscription?.unsubscribe();
     if (this.scrubberTimer) {
       clearTimeout(this.scrubberTimer);
     }
@@ -423,11 +478,15 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.timelineService.setScrollY(PageHelper.ScrollY, this.filter);
     const query = JSON.stringify(TimelineService.monthQuery(m.month, this.filter));
     this.lightboxService.backOnCloseUrl = '/search/' + query;
+    TimelineReuseStrategy.keepNext = true;
     this.router.navigate(['/search', query], {
       queryParams: {
         [QueryParams.gallery.photo]: Utils.concatUrls(media.directory.path, media.directory.name, media.name),
       },
-    }).catch(console.error);
+    }).catch((e) => {
+      TimelineReuseStrategy.keepNext = false;
+      console.error(e);
+    });
   }
 
   // --- scrubber -----------------------------------------------------------
