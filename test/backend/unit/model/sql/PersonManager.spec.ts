@@ -532,6 +532,25 @@ describe('PersonManager.pickSample', () => {
     ], 'Eric')).to.equal(2);
   });
 
+  it('should prefer a whole face, alone in the crop and not a close-up, over a larger one', () => {
+    const at = (name: string, left: number, top: number, side: number) => ({name, box: {width: side, height: side, left, top}});
+    const photo = (id: number, faces: unknown[]) => ({id, rating: 0, date: id, faces, width: 4000, height: 3000});
+    expect(PersonManager.pickSample([
+      photo(1, [at('Eric', 0, 0, 1500)]), // cut by the edge of the photo
+      photo(2, [at('Eric', 1000, 800, 2000)]), // close-up selfie
+      photo(3, [at('Eric', 1000, 1000, 900), at('Anna', 1700, 1000, 900)]), // Anna in the crop
+      photo(4, [at('Eric', 1000, 1000, 600), at('Anna', 3000, 1000, 600)]),
+      photo(5, [at('Eric', 1000, 1000, 300)]),
+    ], 'Eric')).to.equal(4);
+  });
+
+  it('should take the photo given in person-samples.json when it shows the person', () => {
+    const c = (id: number, path: string) => ({id, rating: 0, date: 0, path, width: 4000, height: 3000,
+      faces: [{name: 'Eric', box: {width: 600, height: 600, left: 1000 + id, top: 1000}}]});
+    expect(PersonManager.pickSample([c(1, 'a/1.jpg'), c(2, 'a/2.jpg')], 'Eric', 'a/1.jpg')).to.equal(1);
+    expect(PersonManager.pickSample([c(1, 'a/1.jpg'), c(2, 'a/2.jpg')], 'Eric', 'b/gone.jpg')).to.equal(2);
+  });
+
   it('should cope with missing or unreadable faces', () => {
     expect(PersonManager.pickSample([], 'Eric')).to.equal(null);
     expect(PersonManager.pickSample([

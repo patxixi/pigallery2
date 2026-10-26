@@ -9,8 +9,22 @@ import {ParentDirectoryDTO} from '../../../common/entities/DirectoryDTO';
 import {ProjectedPersonCacheEntity} from './enitites/person/ProjectedPersonCacheEntity';
 import {SessionContext} from '../SessionContext';
 import {ProjectionAwareManager} from './ProjectionAwareManager';
+import {Config} from '../../../common/config/private/Config';
+import {ProjectPath} from '../../ProjectPath';
+import {promises as fsp} from 'fs';
+import * as path from 'path';
 
 const LOG_TAG = '[PersonManager]';
+
+export interface SampleCandidate {
+  id: number;
+  rating: number;
+  date: number;
+  faces: string | FaceRegion[];
+  width?: number;
+  height?: number;
+  path?: string; // relative to the media folder
+}
 
 export class PersonManager extends ProjectionAwareManager<PersonEntry> {
 
@@ -93,9 +107,16 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
    * The sample (junction id) to show for a person: best rated, then the
    * largest face of that person in pixels, then the newest photo.
    */
-  public static pickSample(candidates: { id: number, rating: number, date: number, faces: string | FaceRegion[] }[],
-                           personName: string): number {
-    let best: { id: number, rating: number, area: number, date: number } = null;
+  /**
+   * Picks the face shown as the person's portrait. A path listed for the
+   * person in <dbFolder>/person-samples.json wins (written by an external
+   * face analysis, see README). Otherwise: best rated, then a usable face
+   * (whole face with its margin inside the photo, no other face in the crop,
+   * not a close-up, at least 200 px), then the largest face, then the newest.
+   */
+  public static pickSample(candidates: SampleCandidate[], personName: string, preferredPath?: string): number {
+    const margin = Config.Media.Photo.personFaceMargin / 2;
+    let best: { id: number, key: number[] } = null;
     for (const c of candidates) {
       let faces: FaceRegion[] = [];
       try {
@@ -103,16 +124,63 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
       } catch (e) {
         // unreadable faces: area 0
       }
-      const box = faces.find(f => f.name === personName)?.box;
-      const cur = {id: c.id, rating: c.rating || 0, area: box ? box.width * box.height : 0, date: Number(c.date) || 0};
-      if (!best ||
-        cur.rating > best.rating ||
-        (cur.rating === best.rating && (cur.area > best.area || (cur.area === best.area && cur.date > best.date)))) {
-        best = cur;
+      const face = faces.find(f => f.name === personName);
+      const box = face?.box;
+      const area = box ? box.width * box.height : 0;
+      let framed = false;
+      let alone = false;
+      let closeUp = true;
+      if (box && c.width && c.height) {
+        const cut = {
+          left: box.left - box.width * margin,
+          top: box.top - box.height * margin,
+          right: box.left + box.width * (1 + margin),
+          bottom: box.top + box.height * (1 + margin),
+        };
+        framed = cut.left >= 0 && cut.top >= 0 && cut.right <= c.width && cut.bottom <= c.height;
+        alone = !faces.some(f => f !== face && f.box &&
+          f.box.left < cut.right && f.box.left + f.box.width > cut.left &&
+          f.box.top < cut.bottom && f.box.top + f.box.height > cut.top);
+        closeUp = Math.max(box.width / c.width, box.height / c.height) > PersonManager.CLOSE_UP_RATIO;
+      }
+      const usable = framed && alone && !closeUp && area >= PersonManager.MIN_FACE_SIDE * PersonManager.MIN_FACE_SIDE;
+      const preferred = !!preferredPath && !!box && c.path === preferredPath;
+      const key = [+preferred, c.rating || 0, +usable, +(framed && alone), +framed, area, Number(c.date) || 0];
+      if (!best || PersonManager.compareKeys(key, best.key) > 0) {
+        best = {id: c.id, key};
       }
     }
     return best ? best.id : null;
   }
+
+  private static readonly CLOSE_UP_RATIO = 0.35;
+  private static readonly MIN_FACE_SIDE = 200;
+
+  private static compareKeys(a: number[], b: number[]): number {
+    for (let i = 0; i < a.length; ++i) {
+      if (a[i] !== b[i]) {
+        return a[i] - b[i];
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Optional {"person name": "dir/sub/photo.jpg"} in the database folder,
+   * paths relative to the media folder.
+   */
+  private static async loadPreferredSamples(): Promise<Record<string, string>> {
+    try {
+      return JSON.parse(await fsp.readFile(path.join(ProjectPath.DBFolder, PersonManager.SAMPLES_FILE), 'utf8')) || {};
+    } catch (e) {
+      if (e.code !== 'ENOENT') {
+        Logger.warn(LOG_TAG, 'Ignoring ' + PersonManager.SAMPLES_FILE + ': ' + e.message);
+      }
+      return {};
+    }
+  }
+
+  public static readonly SAMPLES_FILE = 'person-samples.json';
 
   protected async invalidateDBCache(changedDir?: ParentDirectoryDTO): Promise<void> {
     if (!changedDir || !changedDir.id) {
@@ -226,35 +294,42 @@ export class PersonManager extends ProjectionAwareManager<PersonEntry> {
         .select(['pjt.person as personId', 'COUNT(*) as count'])
         .groupBy('pjt.person')
         .getRawMany();
-      // Compute sample regions per person: best rated, then the largest face
-      // in pixels (a small face in a group photo gives a blurry thumbnail),
-      // then the newest photo.
+      // Compute sample regions per person (see pickSample)
       // Use individual queries per person to ensure compatibility with older SQLite versions
       const topSamples: Record<number, number> = {};
       const names: Record<number, string> = {};
       batch.forEach(p => names[p.id] = p.name);
+      const preferred = await PersonManager.loadPreferredSamples();
       for (const personId of personIds) {
         const sampleQb = connection
           .getRepository(PersonJunctionTable)
           .createQueryBuilder('pjt')
           .innerJoin('pjt.media', 'media')
+          .leftJoin('media.directory', 'directory')
           .where('pjt.person = :personId', {personId});
 
         // Apply projection query if it exists
         if (session.projectionQuery) {
-          if (session.hasDirectoryProjection) {
-            sampleQb.leftJoin('media.directory', 'directory');
-          }
           sampleQb.andWhere(session.projectionQuery);
         }
 
-        const candidates: { id: number, rating: number, date: number, faces: string }[] = await sampleQb
+        const rows: { id: number, rating: number, date: number, faces: string, width: number, height: number,
+          dirPath: string, dirName: string, name: string }[] = await sampleQb
           .select('pjt.id', 'id')
           .addSelect('media.metadataRating', 'rating')
           .addSelect('media.metadataCreationdate', 'date')
           .addSelect('media.metadataFaces', 'faces')
+          .addSelect('media.metadataSizeWidth', 'width')
+          .addSelect('media.metadataSizeHeight', 'height')
+          .addSelect('directory.path', 'dirPath')
+          .addSelect('directory.name', 'dirName')
+          .addSelect('media.name', 'name')
           .getRawMany();
-        const best = PersonManager.pickSample(candidates, names[personId]);
+        const candidates: SampleCandidate[] = rows.map(r => ({
+          ...r,
+          path: path.posix.join(r.dirPath || '', r.dirName || '', r.name)
+        }));
+        const best = PersonManager.pickSample(candidates, names[personId], preferred[names[personId]]);
         if (best !== null) {
           topSamples[personId] = best;
         }
