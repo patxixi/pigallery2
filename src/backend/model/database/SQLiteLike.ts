@@ -14,6 +14,8 @@ import {SQL_COLLATE} from './enitites/EntityUtils';
  */
 export class SQLiteLike {
   private static readonly cache = new Map<string, RegExp>();
+  // folded texts: the same folder name or keyword list comes for many photos
+  private static readonly folded = new Map<string, string>();
 
   private static get sqlite(): boolean {
     return Config.Database.type === DatabaseType.sqlite;
@@ -25,7 +27,15 @@ export class SQLiteLike {
     if (/^[\x00-\x7F]*$/.test(text)) {
       return text.toLowerCase();
     }
-    return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+    let f = this.folded.get(text);
+    if (f === undefined) {
+      f = text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+      if (this.folded.size > 20000) {
+        this.folded.clear();
+      }
+      this.folded.set(text, f);
+    }
+    return f;
   }
 
   /** The LIKE pattern to bind for where(). */

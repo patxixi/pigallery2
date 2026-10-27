@@ -5,6 +5,9 @@ import {DatabaseType} from '../../../../../src/common/config/private/PrivateConf
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 const Database = require('better-sqlite3'); // no type declarations
 
+declare const before: any;
+declare const after: any;
+
 describe('SQLiteLike', () => {
   const db = new Database(':memory:');
   SQLiteLike.register(db);
