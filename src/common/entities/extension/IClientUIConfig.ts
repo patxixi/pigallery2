@@ -38,6 +38,13 @@ export interface IClientMediaButtonPopupFields {
    */
   keepValue?: boolean;
   /**
+   * String fields: values proposed while typing (any other value can still be typed),
+   * from a GET route of the extension (path relative to the extension's base path,
+   * e.g.: the route 'albums' added with extension.RESTApi.get.jsonResponse(['albums'], ...))
+   * that returns a string[]. Fetched each time the popup opens.
+   */
+  suggestionsApiPath?: string;
+  /**
    * If true, the field will be required.
    * If boolean, the field will be required to be true to click the button.
    */

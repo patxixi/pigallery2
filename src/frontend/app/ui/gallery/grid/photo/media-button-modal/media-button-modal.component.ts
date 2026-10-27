@@ -4,6 +4,9 @@ import {Subscription} from 'rxjs';
 import {NgFor, NgIf} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {IClientMediaFields, IMediaRequestBodyData} from '../../../../../../../common/entities/extension/IClientUIConfig';
+import {NetworkService} from '../../../../../model/network/network.service';
+import {Utils} from '../../../../../../../common/Utils';
+import {IClientMediaButtonConfigWithBaseApiPath} from '../photo.grid.gallery.component';
 
 @Component({
   selector: 'app-media-button-modal',
@@ -15,9 +18,14 @@ import {IClientMediaFields, IMediaRequestBodyData} from '../../../../../../../co
 export class MediaButtonModalComponent implements OnInit, OnDestroy {
   modalData: MediaButtonModalData | null = null;
   formData: IMediaRequestBodyData = {};
+  /**
+   * Values proposed while typing, by custom field id (see suggestionsApiPath).
+   */
+  suggestions: Record<string, string[]> = {};
   private subscription: Subscription;
 
-  constructor(private modalService: MediaButtonModalService) {
+  constructor(private modalService: MediaButtonModalService,
+              private networkService: NetworkService) {
   }
 
   ngOnInit(): void {
@@ -170,6 +178,24 @@ export class MediaButtonModalComponent implements OnInit, OnDestroy {
         }
         this.formData.customFields[field.id] = field.defaultValue ?? this.getDefaultValueForType(field.type);
       });
+      this.loadSuggestions();
+    }
+  }
+
+  private loadSuggestions(): void {
+    this.suggestions = {};
+    const button = this.modalData.button as IClientMediaButtonConfigWithBaseApiPath;
+    for (const field of button.popup.customFields) {
+      if (field.type !== 'string' || !field.suggestionsApiPath) {
+        continue;
+      }
+      this.networkService.getJson<string[]>(Utils.concatUrls(button.extensionBasePath, field.suggestionsApiPath))
+        .then((values) => {
+          if (this.modalData?.button === button && Array.isArray(values)) {
+            this.suggestions[field.id] = values;
+          }
+        })
+        .catch(console.error); // the field still takes any value
     }
   }
 

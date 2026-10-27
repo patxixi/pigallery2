@@ -44,8 +44,12 @@
                    [id]="'custom_' + customFieldEntry.id"
                    type="text"
                    class="form-control"
+                   [attr.list]="suggestions[customFieldEntry.id] ? 'suggestions_' + customFieldEntry.id : null"
                    [(ngModel)]="formData.customFields[customFieldEntry.id]"
                    [required]="customFieldEntry.required">
+            <datalist *ngIf="suggestions[customFieldEntry.id]" [id]="'suggestions_' + customFieldEntry.id">
+              <option *ngFor="let s of suggestions[customFieldEntry.id]" [value]="s"></option>
+            </datalist>
 
             <!-- Number input -->
             <input *ngIf="customFieldEntry.type === 'number'"
