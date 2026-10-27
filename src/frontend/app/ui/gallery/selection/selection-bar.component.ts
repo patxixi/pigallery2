@@ -48,7 +48,7 @@ export class SelectionBarComponent implements OnInit, OnDestroy {
               private authService: AuthenticationService,
               private injector: Injector,
               zone: NgZone) {
-    this.dragSelect = new DragSelect(selection, zone);
+    this.dragSelect = new DragSelect(selection, zone, () => this.canSelect);
   }
 
   /**

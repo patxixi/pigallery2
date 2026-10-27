@@ -8,17 +8,28 @@ import {SelectionService} from './selection.service';
  * the tiles leaving the range their previous state. A gesture that starts vertically scrolls
  * (touch-action: pan-y). Near the top/bottom of the screen the page scrolls by itself.
  * Tiles are found by their data-selection attribute (see SelectionService.mediaKey/directoryKey).
+ *
+ * Outside the selection mode, a long press on a tile (touch or pen) starts it with that tile
+ * selected, instead of the browser's menu on the image or link.
  */
 export class DragSelect {
   private static readonly SELECTOR = '[data-selection]';
+  private static readonly LONG_PRESS_MS = 500;
   private start: { x: number, y: number, key: string, pointerId: number } = null;
   private dragging = false;
   private target = false;
   private before: Set<string> = null;
   private last: { x: number, y: number } = null;
   private readonly listeners: [string, (e: Event) => void][] = [];
+  private press: { x: number, y: number, key: string, pointerId: number, timer: number } = null;
+  private pressed = false;
+  private lastPointerType: string = null;
 
-  constructor(private selection: SelectionService, private zone: NgZone) {
+  /**
+   * @param canStart the user may use the selection mode (for the long press)
+   */
+  constructor(private selection: SelectionService, private zone: NgZone,
+              private canStart: () => boolean = () => true) {
   }
 
   public attach(): void {
@@ -28,19 +39,28 @@ export class DragSelect {
       this.listen('pointerup', () => this.end());
       this.listen('pointercancel', () => this.end());
       this.listen('dragstart', (e: Event) => {
-        if (this.selection.active) {
+        if (this.selection.active || this.press || this.pressed) {
           e.preventDefault();
         }
       });
       this.listen('contextmenu', (e: Event) => {
-        if (this.selection.active && DragSelect.tile(e.target as Element)) {
+        const t = DragSelect.tile(e.target as Element);
+        if (!t || (!this.selection.active && this.lastPointerType === 'mouse')) {
+          return; // right click: the browser's menu stays
+        }
+        if (this.selection.active || this.canStart()) {
           e.preventDefault(); // no long-press menu on the tiles
         }
+        if (this.press) {
+          this.longPress(); // the browser saw the long press first
+        }
       });
+      this.listen('scroll', () => this.cancelPress());
     });
   }
 
   public detach(): void {
+    this.cancelPress();
     this.listeners.forEach(([type, fn]) => document.removeEventListener(type, fn, true));
     this.listeners.length = 0;
   }
@@ -65,7 +85,17 @@ export class DragSelect {
   }
 
   private onDown(e: PointerEvent): void {
-    if (!this.selection.active || !e.isPrimary || e.button > 0) {
+    this.lastPointerType = e.pointerType;
+    this.pressed = false;
+    if (!e.isPrimary) {
+      this.cancelPress(); // pinch
+      return;
+    }
+    if (!this.selection.active) {
+      this.startPress(e);
+      return;
+    }
+    if (e.button > 0) {
       return;
     }
     const t = DragSelect.tile(e.target as Element);
@@ -73,7 +103,43 @@ export class DragSelect {
     this.dragging = false;
   }
 
+  private startPress(e: PointerEvent): void {
+    this.cancelPress();
+    const t = DragSelect.tile(e.target as Element);
+    if (!t || e.pointerType === 'mouse' || !this.canStart()) {
+      return;
+    }
+    this.press = {
+      x: e.clientX, y: e.clientY, key: t.dataset['selection'], pointerId: e.pointerId,
+      timer: window.setTimeout(() => this.longPress(), DragSelect.LONG_PRESS_MS),
+    };
+  }
+
+  private cancelPress(): void {
+    if (this.press) {
+      clearTimeout(this.press.timer);
+      this.press = null;
+    }
+  }
+
+  private longPress(): void {
+    const key = this.press.key;
+    this.cancelPress();
+    this.pressed = true; // the tap that ends it must not toggle the tile again
+    if (navigator.vibrate) {
+      navigator.vibrate(20);
+    }
+    this.zone.run(() => {
+      this.selection.start();
+      this.selection.setKey(key, true);
+    });
+  }
+
   private onMove(e: PointerEvent): void {
+    if (this.press && e.pointerId === this.press.pointerId &&
+      Math.max(Math.abs(e.clientX - this.press.x), Math.abs(e.clientY - this.press.y)) >= 10) {
+      this.cancelPress(); // scrolling or swiping
+    }
     if (!this.start || e.pointerId !== this.start.pointerId) {
       return;
     }
@@ -142,7 +208,9 @@ export class DragSelect {
   }
 
   private end(): void {
-    if (this.dragging) {
+    this.cancelPress();
+    if (this.dragging || this.pressed) {
+      this.pressed = false;
       this.selection.dragEndedAt = Date.now();
     }
     this.start = null;

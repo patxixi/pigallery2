@@ -23,7 +23,7 @@
                  [style.grid-auto-rows.px]="tileSize">
               <a *ngFor="let t of d.tiles; trackBy: trackTile" class="tile" role="button"
                  [class.selected]="selection.active && selection.isMediaSelected(t.media)"
-                 [attr.data-selection]="selection.active ? tileKey(t) : null"
+                 [attr.data-selection]="tileKey(t)"
                  [style.touch-action]="selection.active ? 'pan-y' : null"
                  [attr.title]="t.media.name" (click)="open(m, t, $event)">
                 <img [src]="t.src" loading="lazy" decoding="async" alt="">

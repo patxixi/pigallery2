@@ -68,10 +68,10 @@ export class GalleryPhotoComponent implements IRenderable, OnInit, OnDestroy {
   }
 
   /**
-   * Selection mode: key used by the drag selection; vertical gestures keep scrolling.
+   * Key used by the selection: long press, drag selection (vertical gestures keep scrolling).
    */
   @HostBinding('attr.data-selection') get SelectionKey(): string {
-    return this.selection.active ? SelectionService.mediaKey(this.gridMedia.media) : null;
+    return SelectionService.mediaKey(this.gridMedia.media);
   }
 
   @HostBinding('style.touch-action') get TouchAction(): string {

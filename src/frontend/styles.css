@@ -96,3 +96,10 @@ This is mostly btn-dark + border fix
 
 
 body {overflow-y: scroll;}
+
+/* Tiles: a long press starts the selection mode (drag-select.ts), not the browser's menu or a text selection */
+[data-selection] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
