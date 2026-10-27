@@ -72,6 +72,8 @@ export class ControlsLightboxComponent implements OnDestroy, OnChanges {
   // Swipe up shares the photo; when the phone refuses to open its share sheet
   // that late after the swipe, a button offers it (a tap may open it).
   public shareFile: File = null;
+  // the phone's share sheet (Web Share API): phones, some desktop browsers
+  public readonly canShare = typeof navigator !== 'undefined' && !!navigator.share;
   private sharing = false;
   private ctx: CanvasRenderingContext2D;
   private visibilityTimer: number = null;

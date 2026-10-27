@@ -65,6 +65,12 @@
               <small>(shift + D)</small>
             </a>
           </li>
+          <li role="menuitem" *ngIf="canShare && activePhoto && !activePhoto.gridMedia.isVideo()">
+            <a class="dropdown-item" href="#" (click)="$event.preventDefault(); share()">
+              <ng-icon class="me-2" name="ionShareSocialOutline"></ng-icon>
+              <span i18n>Share</span>
+            </a>
+          </li>
           <li role="menuitem"
               dropdown>
             <div class="dropdown-item">
