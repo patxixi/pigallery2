@@ -7,10 +7,10 @@ import {SQL_COLLATE} from './enitites/EntityUtils';
  * utf8mb4_general_ci does: SQLite's LIKE only folds ASCII letters, so
  * searching "noel" did not find "Noël", nor "ÉTÉ" find "été" (#729).
  *
- * SQLite's LIKE is kept for speed (a JavaScript function called from SQLite
- * costs several times more): the pattern is folded (lower case, no accents)
- * and only texts with non-ASCII characters that LIKE did not match are
- * compared again by pg_like(), with both sides folded.
+ * Only for the searches that need it (a JavaScript function called from
+ * SQLite on every row costs about 5 times the native LIKE): pg_like()
+ * compares both sides folded. The pattern is bound once: a query can have
+ * thousands of conditions (SOME_OF) and SQLite limits the bound variables.
  */
 export class SQLiteLike {
   private static readonly cache = new Map<string, RegExp>();
@@ -52,10 +52,8 @@ export class SQLiteLike {
     if (!this.sqlite) {
       return `${field} ${negate ? 'NOT LIKE' : 'LIKE'} :${param} COLLATE ${SQL_COLLATE}`;
     }
-    const esc = escape ? ' ESCAPE \'\\\'' : '';
     const escArg = escape ? ', \'\\\'' : '';
-    return `${negate ? 'NOT ' : ''}(${field} LIKE :${param}${esc} OR ` +
-      `(${field} GLOB '*[^ -~]*' AND pg_like(:${param}, ${field}${escArg})))`;
+    return `(${field} IS NOT NULL AND ${negate ? 'NOT ' : ''}pg_like(:${param}, ${field}${escArg}))`;
   }
 
   /** SQL LIKE semantics (with an optional ESCAPE character), case and accents folded. */
