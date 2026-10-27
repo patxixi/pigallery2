@@ -1,12 +1,23 @@
+import {Config} from '../../../common/config/private/Config';
+import {DatabaseType} from '../../../common/config/private/PrivateConfig';
+import {SQL_COLLATE} from './enitites/EntityUtils';
+
 /**
- * LIKE for SQLite that ignores case and accents, like MySQL's
- * utf8mb4_general_ci does: SQLite's own LIKE only folds ASCII letters, so
+ * Text search that ignores case and accents on SQLite too, like MySQL's
+ * utf8mb4_general_ci does: SQLite's LIKE only folds ASCII letters, so
  * searching "noel" did not find "Noël", nor "ÉTÉ" find "été" (#729).
- * Registered on each connection as the like() function, which SQLite calls
- * for the LIKE operator (with the ESCAPE character as third argument).
+ *
+ * SQLite's LIKE is kept for speed (a JavaScript function called from SQLite
+ * costs several times more): the pattern is folded (lower case, no accents)
+ * and only texts with non-ASCII characters that LIKE did not match are
+ * compared again by pg_like(), with both sides folded.
  */
 export class SQLiteLike {
   private static readonly cache = new Map<string, RegExp>();
+
+  private static get sqlite(): boolean {
+    return Config.Database.type === DatabaseType.sqlite;
+  }
 
   /** Lower case, accents removed. */
   public static fold(text: string): string {
@@ -17,6 +28,27 @@ export class SQLiteLike {
     return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
   }
 
+  /** The LIKE pattern to bind for where(). */
+  public static param(pattern: string): string {
+    return this.sqlite ? this.fold(pattern) : pattern;
+  }
+
+  /**
+   * WHERE condition: `field` LIKE (or NOT LIKE) the pattern bound as `param`
+   * (made with param()), ignoring case and accents.
+   * @param escape the pattern escapes with '\'
+   */
+  public static where(field: string, param: string, escape = false, negate = false): string {
+    if (!this.sqlite) {
+      return `${field} ${negate ? 'NOT LIKE' : 'LIKE'} :${param} COLLATE ${SQL_COLLATE}`;
+    }
+    const esc = escape ? ' ESCAPE \'\\\'' : '';
+    const escArg = escape ? ', \'\\\'' : '';
+    return `${negate ? 'NOT ' : ''}(${field} LIKE :${param}${esc} OR ` +
+      `(${field} GLOB '*[^ -~]*' AND pg_like(:${param}, ${field}${escArg})))`;
+  }
+
+  /** SQL LIKE semantics (with an optional ESCAPE character), case and accents folded. */
   public static like(pattern: string, value: unknown, escape?: string): number {
     if (pattern === null || value === null || value === undefined) {
       return null;
@@ -24,9 +56,9 @@ export class SQLiteLike {
     return this.toRegExp(String(pattern), escape).test(this.fold(String(value))) ? 1 : 0;
   }
 
+  /** Adds pg_like() to a better-sqlite3 database. */
   public static register(db: { function: (name: string, options: object, fn: (...args: unknown[]) => unknown) => void }): void {
-    const options = {deterministic: true, varargs: true};
-    db.function('like', options, (pattern: string, value: unknown, escape?: string) =>
+    db.function('pg_like', {deterministic: true, varargs: true}, (pattern: string, value: unknown, escape?: string) =>
       SQLiteLike.like(pattern, value, escape));
   }
 
