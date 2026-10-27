@@ -24,6 +24,7 @@ import {
   RouterLink,
 } from '@angular/router';
 import {TimelineReuseStrategy} from './timeline-reuse.strategy';
+import {LightboxOpening} from './lightbox-opening';
 import {Subscription} from 'rxjs';
 import {NgFor, NgIf} from '@angular/common';
 import {NgIconComponent} from '@ng-icons/core';
@@ -202,6 +203,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
   private resume(frames = 30): void {
     if (frames === 30) {
       this.paused = false;
+      LightboxOpening.hide(); // back before the photo showed
       this.piTitleService.setTitle(this.filterLabel || $localize`Timeline`);
       this.lightboxService.backOnCloseUrl = null;
     }
@@ -479,7 +481,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     window.location.reload();
   }
 
-  public open(m: MonthBlock, tile: Tile): void {
+  public open(m: MonthBlock, tile: Tile, event?: MouseEvent): void {
     const media = tile.media;
     if (this.selection.active) {
       this.selection.toggleMedia(media);
@@ -488,6 +490,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.timelineService.setScrollY(PageHelper.ScrollY, this.filter);
     const query = JSON.stringify(TimelineService.monthQuery(m.month, this.filter));
     this.lightboxService.backOnCloseUrl = '/search/' + query;
+    if (event?.currentTarget) {
+      LightboxOpening.show(event.currentTarget as HTMLElement,
+        media.metadata.size?.width || 1, media.metadata.size?.height || 1);
+    }
     TimelineReuseStrategy.keepNext = true;
     this.router.navigate(['/search', query], {
       queryParams: {
@@ -495,6 +501,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
       },
     }).catch((e) => {
       TimelineReuseStrategy.keepNext = false;
+      LightboxOpening.hide();
       console.error(e);
     });
   }

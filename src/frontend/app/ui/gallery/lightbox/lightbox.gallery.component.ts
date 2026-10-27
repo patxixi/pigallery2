@@ -9,6 +9,7 @@ import {GalleryLightboxMediaComponent} from './media/media.lightbox.gallery.comp
 import {Subscription} from 'rxjs';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 import {Location} from '@angular/common';
+import {LightboxOpening} from '../../timeline/lightbox-opening';
 import {PageHelper} from '../../../model/page.helper';
 import {QueryService} from '../../../model/query.service';
 import {MediaDTO} from '../../../../../common/entities/MediaDTO';
@@ -261,22 +262,28 @@ export class GalleryLightboxComponent implements OnDestroy, OnInit {
       throw new Error('Can\'t find Photo');
     }
 
+    // Opened from the timeline: its tile already grew to full screen above
+    // (LightboxOpening), the lightbox opens in place under it, not from the
+    // tile of this page's grid, which is never seen.
+    const fromTimeline = LightboxOpening.active;
     const lightboxDimension = selectedPhoto.getDimension();
     lightboxDimension.top -= PageHelper.ScrollY;
-    this.animating = true;
-    this.animatePhoto(
-      selectedPhoto.getDimension(),
-      this.calcLightBoxPhotoDimension(selectedPhoto.gridMedia.media)
-    ).onDone((): void => {
-      this.animating = false;
-      this.status = LightboxStates.Open;
-    });
-    this.animateLightbox(lightboxDimension, {
+    const photoDimension = this.calcLightBoxPhotoDimension(selectedPhoto.gridMedia.media);
+    const frameDimension = {
       top: 0,
       left: 0,
       width: this.photoFrameDim.width,
       height: this.photoFrameDim.height,
-    } as Dimension);
+    } as Dimension;
+    this.animating = true;
+    this.animatePhoto(
+      fromTimeline ? photoDimension : selectedPhoto.getDimension(),
+      photoDimension
+    ).onDone((): void => {
+      this.animating = false;
+      this.status = LightboxStates.Open;
+    });
+    this.animateLightbox(fromTimeline ? frameDimension : lightboxDimension, frameDimension);
 
     this.blackCanvasOpacity = 0;
     this.startPhotoDimension = selectedPhoto.getDimension();
@@ -285,6 +292,9 @@ export class GalleryLightboxComponent implements OnDestroy, OnInit {
     this.blackCanvasOpacity = 1.0;
     this.showPhoto(this.gridPhotoQL.toArray().indexOf(selectedPhoto), false);
     this.piTitleService.setMediaTitle(selectedPhoto.gridMedia);
+    if (fromTimeline) {
+      LightboxOpening.done(this.lightboxElement.nativeElement);
+    }
   }
 
   /** 0 to 1: how far the pull down is, for the scale and the background. */
