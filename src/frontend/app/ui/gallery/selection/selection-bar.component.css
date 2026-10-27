@@ -15,6 +15,14 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
+/* Touch screens start the selection with a long press on a tile (drag-select.ts):
+   no Select button over the photos. A mouse has no long press: the button stays. */
+@media (hover: none) and (pointer: coarse) {
+  .selection-bar.idle {
+    display: none;
+  }
+}
+
 .count {
   font-size: 0.9rem;
 }

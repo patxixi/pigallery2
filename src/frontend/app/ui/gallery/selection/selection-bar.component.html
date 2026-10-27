@@ -1,4 +1,4 @@
-<div class="selection-bar" *ngIf="canSelect">
+<div class="selection-bar" [class.idle]="!selection.active" *ngIf="canSelect">
   <button class="btn btn-sm btn-secondary" (click)="toggleMode()">
     <ng-container *ngIf="!selection.active" i18n>☐ Select</ng-container>
     <ng-container *ngIf="selection.active" i18n>✕ Cancel</ng-container>
