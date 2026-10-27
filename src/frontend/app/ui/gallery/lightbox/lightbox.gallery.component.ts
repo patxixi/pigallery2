@@ -10,6 +10,7 @@ import {Subscription} from 'rxjs';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 import {Location} from '@angular/common';
 import {LightboxOpening} from '../../timeline/lightbox-opening';
+import {GalleryBackService} from '../gallery-back.service';
 import {PageHelper} from '../../../model/page.helper';
 import {QueryService} from '../../../model/query.service';
 import {MediaDTO} from '../../../../../common/entities/MediaDTO';
@@ -99,6 +100,7 @@ export class GalleryLightboxComponent implements OnDestroy, OnInit {
     private wakeLockService: WakeLockService,
     private lightboxService: LightboxService,
     private location: Location,
+    private galleryBack: GalleryBackService,
   ) {
   }
 
@@ -332,6 +334,12 @@ export class GalleryLightboxComponent implements OnDestroy, OnInit {
     const backUrl = this.lightboxService.backOnCloseUrl;
     if (backUrl && decodeURIComponent(this.router.url.split('?')[0]) === backUrl) {
       this.lightboxService.backOnCloseUrl = null;
+      this.location.back();
+      return;
+    }
+    // The folder is just before the photo in the history: back to it, so the
+    // back key does not open the photo again.
+    if (this.galleryBack.photoOverDir()) {
       this.location.back();
       return;
     }
