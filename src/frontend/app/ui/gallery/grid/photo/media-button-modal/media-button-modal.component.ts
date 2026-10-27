@@ -1,4 +1,4 @@
-import {Component, HostListener, OnDestroy, OnInit} from '@angular/core';
+import {Component, HostListener, Injector, OnDestroy, OnInit} from '@angular/core';
 import {MediaButtonModalData, MediaButtonModalService} from './media-button-modal.service';
 import {Subscription} from 'rxjs';
 import {NgFor, NgIf} from '@angular/common';
@@ -25,7 +25,7 @@ export class MediaButtonModalComponent implements OnInit, OnDestroy {
   private subscription: Subscription;
 
   constructor(private modalService: MediaButtonModalService,
-              private networkService: NetworkService) {
+              private injector: Injector) {
   }
 
   ngOnInit(): void {
@@ -189,7 +189,8 @@ export class MediaButtonModalComponent implements OnInit, OnDestroy {
       if (field.type !== 'string' || !field.suggestionsApiPath) {
         continue;
       }
-      this.networkService.getJson<string[]>(Utils.concatUrls(button.extensionBasePath, field.suggestionsApiPath))
+      // fetched only when needed: pages that just hold the modal don't depend on the network service
+      this.injector.get(NetworkService).getJson<string[]>(Utils.concatUrls(button.extensionBasePath, field.suggestionsApiPath))
         .then((values) => {
           if (this.modalData?.button === button && Array.isArray(values)) {
             this.suggestions[field.id] = values;

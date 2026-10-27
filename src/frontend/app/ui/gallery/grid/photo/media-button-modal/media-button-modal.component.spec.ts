@@ -1,6 +1,7 @@
 import {BehaviorSubject} from 'rxjs';
 import {MediaButtonModalComponent} from './media-button-modal.component';
 import {MediaButtonModalData, MediaButtonModalService} from './media-button-modal.service';
+import {Injector} from '@angular/core';
 import {NetworkService} from '../../../../../model/network/network.service';
 
 describe('MediaButtonModalComponent suggestions', () => {
@@ -27,7 +28,8 @@ describe('MediaButtonModalComponent suggestions', () => {
         return getJson(url);
       }
     } as unknown as NetworkService;
-    const component = new MediaButtonModalComponent(service, network);
+    const injector = Injector.create({providers: [{provide: NetworkService, useValue: network}]});
+    const component = new MediaButtonModalComponent(service, injector);
     component.ngOnInit();
     await new Promise((r) => setTimeout(r));
     return {component, urls};
