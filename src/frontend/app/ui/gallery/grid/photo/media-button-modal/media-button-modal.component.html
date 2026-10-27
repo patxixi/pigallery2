@@ -34,7 +34,8 @@
         <!-- Custom fields -->
         <div *ngIf="modalData.button.popup?.customFields">
           <div *ngFor="let customFieldEntry of modalData.button.popup?.customFields" class="mb-3">
-            <label [for]="'custom_' + customFieldEntry.id" class="form-label">
+            <!-- a checkbox has its label next to it -->
+            <label *ngIf="customFieldEntry.type !== 'boolean'" [for]="'custom_' + customFieldEntry.id" class="form-label">
               {{ customFieldEntry.label }}
               <span *ngIf="customFieldEntry.required" class="text-danger">*</span>
             </label>
@@ -64,7 +65,7 @@
               <input [id]="'custom_' + customFieldEntry.id"
                      type="checkbox"
                      class="form-check-input"
-                     [(ngModel)]="formData.customFields[customFieldEntry.id]"v
+                     [(ngModel)]="formData.customFields[customFieldEntry.id]"
                      [required]="customFieldEntry.required">
               <label [for]="'custom_' + customFieldEntry.id" class="form-check-label">
                 {{ customFieldEntry.label }}
