@@ -10,12 +10,14 @@ import {SelectionService} from './selection.service';
  * Tiles are found by their data-selection attribute (see SelectionService.mediaKey/directoryKey).
  *
  * Outside the selection mode, a long press on a tile (touch or pen) starts it with that tile
- * selected, instead of the browser's menu on the image or link.
+ * selected, instead of the browser's menu on the image or link. Without lifting the finger,
+ * moving it then selects up to the tile under it, in any direction (like Google Photos): the
+ * page does not scroll meanwhile, except by itself near the top/bottom of the screen.
  */
 export class DragSelect {
   private static readonly SELECTOR = '[data-selection]';
   private static readonly LONG_PRESS_MS = 500;
-  private start: { x: number, y: number, key: string, pointerId: number } = null;
+  private start: { x: number, y: number, key: string, pointerId: number, held?: boolean } = null;
   private dragging = false;
   private target = false;
   private before: Set<string> = null;
@@ -56,6 +58,11 @@ export class DragSelect {
         }
       });
       this.listen('scroll', () => this.cancelPress());
+      this.listen('touchmove', (e: Event) => {
+        if (this.start?.held && e.cancelable) {
+          e.preventDefault(); // the finger held after a long press selects: no scrolling
+        }
+      });
     });
   }
 
@@ -123,9 +130,11 @@ export class DragSelect {
   }
 
   private longPress(): void {
-    const key = this.press.key;
+    const {x, y, key, pointerId} = this.press;
     this.cancelPress();
     this.pressed = true; // the tap that ends it must not toggle the tile again
+    this.start = {x, y, key, pointerId, held: true};
+    this.dragging = false;
     if (navigator.vibrate) {
       navigator.vibrate(20);
     }
@@ -149,7 +158,7 @@ export class DragSelect {
       if (dx < 10 && dy < 10) {
         return;
       }
-      if (dy > dx && e.pointerType !== 'mouse') {
+      if (dy > dx && e.pointerType !== 'mouse' && !this.start.held) {
         this.start = null; // scrolling
         return;
       }
@@ -158,7 +167,8 @@ export class DragSelect {
         ...[...this.selection.media.keys()].map(p => 'm:' + p),
         ...[...this.selection.directories].map(p => 'd:' + p),
       ]);
-      this.target = !this.selection.hasKey(this.start.key);
+      // after a long press, its tile is already selected: the drag selects too
+      this.target = this.start.held || !this.selection.hasKey(this.start.key);
       try {
         document.documentElement.setPointerCapture(e.pointerId);
       } catch (err) {

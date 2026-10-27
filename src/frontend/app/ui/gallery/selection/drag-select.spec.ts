@@ -78,6 +78,32 @@ describe('DragSelect long press', () => {
     expect(menu.defaultPrevented).toBeFalse(); // right click: the browser's menu
   });
 
+  it('should select up to the held finger after a long press, even vertically, without scrolling', () => {
+    tile.style.cssText = 'position:fixed;left:0;top:0;width:50px;height:50px';
+    const below = document.createElement('div');
+    below.dataset['selection'] = 'm:dir/b.jpg';
+    below.style.cssText = 'position:fixed;left:0;top:60px;width:50px;height:50px';
+    document.body.appendChild(below);
+    try {
+      pointer('pointerdown');
+      jasmine.clock().tick(500);
+      expect(selection.active).toBeTrue();
+      const touchMove = new Event('touchmove', {bubbles: true, cancelable: true});
+      img.dispatchEvent(touchMove);
+      expect(touchMove.defaultPrevented).toBeTrue();
+      pointer('pointermove', 'touch', 12, 40);
+      pointer('pointermove', 'touch', 12, 80);
+      expect(selection.hasKey('m:dir/a.jpg')).toBeTrue();
+      expect(selection.hasKey('m:dir/b.jpg')).toBeTrue();
+      pointer('pointerup', 'touch', 12, 80);
+      const later = new Event('touchmove', {bubbles: true, cancelable: true});
+      img.dispatchEvent(later);
+      expect(later.defaultPrevented).toBeFalse(); // finger lifted: scrolling again
+    } finally {
+      below.remove();
+    }
+  });
+
   it('should not start for a user who can not select', () => {
     canStart = false;
     pointer('pointerdown');
