@@ -119,7 +119,7 @@ export class GalleryRouter {
       GalleryMWs.loadFile,
       GalleryMWs.loadBestFitVideo,
       ServerTimingMWs.addServerTiming,
-      RenderingMWs.renderFile
+      RenderingMWs.renderFileNoCache
     );
   }
 
@@ -158,7 +158,7 @@ export class GalleryRouter {
       GalleryMWs.loadFile,
       MetaFileMWs.compressGPX,
       ServerTimingMWs.addServerTiming,
-      RenderingMWs.renderFile
+      RenderingMWs.renderFileNoCache
     );
   }
 
@@ -175,7 +175,7 @@ export class GalleryRouter {
       GalleryMWs.getRandomImage,
       GalleryMWs.loadFile,
       ServerTimingMWs.addServerTiming,
-      RenderingMWs.renderFile
+      RenderingMWs.renderFileNoStore
     );
   }
 
