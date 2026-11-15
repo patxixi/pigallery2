@@ -8111,6 +8111,42 @@
         <source>Sharing failed:</source>
         <target>Échec du partage :</target>
       </trans-unit>
+      <trans-unit id="5096804716994415425" datatype="html">
+        <source>relevance</source>
+        <target>pertinence</target>
+      </trans-unit>
+      <trans-unit id="6205355627445317276" datatype="html">
+        <source>Content</source>
+        <target>Contenu</target>
+      </trans-unit>
+      <trans-unit id="6820882679211074128" datatype="html">
+        <source>Search what the photos show</source>
+        <target>Chercher ce que montrent les photos</target>
+      </trans-unit>
+      <trans-unit id="5300878951772383065" datatype="html">
+        <source>Content search</source>
+        <target>Recherche par contenu</target>
+      </trans-unit>
+      <trans-unit id="1607677181883827265" datatype="html">
+        <source>Shows a button that searches what the photos show (e.g. a turtle, a birthday at the beach). Needs a content search service, see Search.contentSearchUrl.</source>
+        <target>Affiche un bouton qui cherche ce que montrent les photos (ex. : une tortue, un anniversaire à la plage). Nécessite un service de recherche par contenu, voir Search.contentSearchUrl.</target>
+      </trans-unit>
+      <trans-unit id="2596683731463321694" datatype="html">
+        <source>Content search service</source>
+        <target>Service de recherche par contenu</target>
+      </trans-unit>
+      <trans-unit id="374304823170791698" datatype="html">
+        <source>URL of the content search service (e.g. http://127.0.0.1:8766/chercher). It gets the text of a content query as the &quot;q&quot; parameter and answers a JSON object whose &quot;ids&quot; list holds the media ids, the best match first.</source>
+        <target>URL du service de recherche par contenu (ex. : http://127.0.0.1:8766/chercher). Il reçoit le texte d’une recherche par contenu dans le paramètre « q » et répond par un objet JSON dont la liste « ids » contient les identifiants des médias, le plus pertinent d’abord.</target>
+      </trans-unit>
+      <trans-unit id="2157468493574226465" datatype="html">
+        <source>Content search timeout</source>
+        <target>Délai de la recherche par contenu</target>
+      </trans-unit>
+      <trans-unit id="4531826085052506816" datatype="html">
+        <source>The first query after a pause can be slow: the service may load its models.</source>
+        <target>La première recherche après une pause peut être lente : le service charge peut-être ses modèles.</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>
