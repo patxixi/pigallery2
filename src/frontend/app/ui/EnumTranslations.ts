@@ -56,6 +56,7 @@ EnumTranslations[SortByTypes[SortByTypes.Date]] = $localize`date`;
 EnumTranslations[SortByTypes[SortByTypes.Name]] = $localize`name`;
 EnumTranslations[SortByTypes[SortByTypes.Rating]] = $localize`rating`;
 EnumTranslations[SortByTypes[SortByTypes.Random]] = $localize`random`;
+EnumTranslations[SortByTypes[SortByTypes.Relevance]] = $localize`relevance`;
 EnumTranslations[SortByTypes[SortByTypes.PersonCount]] = $localize`faces`;
 EnumTranslations[SortByTypes[SortByTypes.FileSize]] = $localize`file size`;
 
@@ -113,6 +114,7 @@ EnumTranslations[SearchQueryTypes[SearchQueryTypes.caption]] = $localize`Caption
 EnumTranslations[SearchQueryTypes[SearchQueryTypes.orientation]] = $localize`Orientation`;
 EnumTranslations[SearchQueryTypes[SearchQueryTypes.date_pattern]] = $localize`Date pattern`;
 EnumTranslations[SearchQueryTypes[SearchQueryTypes.position]] = $localize`Position`;
+EnumTranslations[SearchQueryTypes[SearchQueryTypes.content]] = $localize`Content`;
 EnumTranslations[SearchQueryTypes[SearchQueryTypes.person]] = $localize`Person`;
 EnumTranslations[SearchQueryTypes[SearchQueryTypes.keyword]] = $localize`Keyword`;
 

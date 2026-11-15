@@ -144,6 +144,8 @@ describe('SearchQueryParser', () => {
       check({type: SearchQueryTypes.caption, value: 'caption'} as TextSearch);
       check({type: SearchQueryTypes.file_name, value: 'filename'} as TextSearch);
       check({type: SearchQueryTypes.position, value: 'New York'} as TextSearch);
+      check({type: SearchQueryTypes.content, value: 'turtle'} as TextSearch);
+      check({type: SearchQueryTypes.content, value: 'Iban et Enekio à la plage'} as TextSearch);
       check({
         type: SearchQueryTypes.position,
         matchType: TextSearchQueryMatchTypes.exact_match,

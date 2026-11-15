@@ -21,7 +21,9 @@ export enum SortByDirectionalTypes {
 
 // These cant be set asc or desc
 export enum SortByBasicTypes {
-  Random = 100
+  Random = 100,
+  // keeps the order of the server: content search results, the best match first
+  Relevance = 110
 }
 
 // These cant be set asc or desc

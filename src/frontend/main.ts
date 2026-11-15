@@ -111,6 +111,7 @@ import {
   ionSettingsOutline,
   ionShareSocialOutline,
   ionShuffleOutline,
+  ionSparklesOutline,
   ionSquareOutline,
   ionStar,
   ionStarOutline,
@@ -189,7 +190,7 @@ bootstrapApplication(AppComponent, {
     importProvidersFrom(BrowserModule, HammerModule, FormsModule, AppRoutingModule, NgIconsModule.withIcons({
         ionDownloadOutline, ionFunnelOutline,
         ionGitBranchOutline, ionArrowDownOutline, ionArrowUpOutline,
-        ionStarOutline, ionStar, ionCalendarOutline, ionPersonOutline, ionShuffleOutline,
+        ionStarOutline, ionStar, ionCalendarOutline, ionPersonOutline, ionShuffleOutline, ionSparklesOutline,
         ionPeopleOutline,
         ionMenuOutline, ionShareSocialOutline,
         ionImagesOutline, ionLinkOutline, ionSearchOutline, ionHammerOutline, ionCopyOutline,

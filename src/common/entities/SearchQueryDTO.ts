@@ -27,6 +27,7 @@ export enum SearchQueryTypes {
   keyword,
   person,
   position,
+  content, // what the photo shows, ranked by an external content search service (Search.contentSearchUrl)
 
 
 }
@@ -44,6 +45,7 @@ export const TextSearchQueryTypes = [
   SearchQueryTypes.keyword,
   SearchQueryTypes.person,
   SearchQueryTypes.position,
+  SearchQueryTypes.content,
 ];
 export const RangeSearchQueryTypes = [
   SearchQueryTypes.date,
@@ -101,6 +103,7 @@ export interface TextSearch extends NegatableSearchQuery {
     | SearchQueryTypes.person
     | SearchQueryTypes.keyword
     | SearchQueryTypes.position
+    | SearchQueryTypes.content
     | SearchQueryTypes.caption
     | SearchQueryTypes.file_name
     | SearchQueryTypes.directory;

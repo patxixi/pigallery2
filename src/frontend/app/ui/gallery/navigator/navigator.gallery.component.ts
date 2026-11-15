@@ -202,6 +202,12 @@ export class GalleryNavigatorComponent {
   }
 
 
+  isSortingAvailable(method: number): boolean {
+    // the relevance order only exists for a content search
+    return method !== SortByTypes.Relevance ||
+      SearchQueryUtils.isContentSearch(this.contentLoaderService.content.value?.searchResult?.searchQuery);
+  }
+
   isDirectionalSort(value: number) {
     return Utils.isValidEnumInt(SortByDirectionalTypes, value);
   }

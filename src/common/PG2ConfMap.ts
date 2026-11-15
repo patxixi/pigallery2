@@ -1,4 +1,4 @@
-import {SortByDirectionalTypes, SortByTypes, SortingMethod} from './entities/SortingMethods';
+import {SortByBasicTypes, SortByDirectionalTypes, SortByTypes, SortingMethod} from './entities/SortingMethods';
 import {Utils} from './Utils';
 
 /**
@@ -14,7 +14,10 @@ export const PG2ConfMap: { sorting: Record<string, SortingMethod>, upload: Recor
 
 Utils.enumToArray(SortByTypes).forEach(kv => {
   if (!Utils.isValidEnumInt(SortByDirectionalTypes, kv.key)) {
-    PG2ConfMap.sorting['.order_random.pg2conf'] = {method: kv.key, ascending: null} as SortingMethod;
+    // relevance only means something for a content search, not for a folder
+    if (kv.key === SortByBasicTypes.Random) {
+      PG2ConfMap.sorting['.order_random.pg2conf'] = {method: kv.key, ascending: null} as SortingMethod;
+    }
     return;
   }
   PG2ConfMap.sorting['.order_descending_' + kv.value.toLowerCase() + '.pg2conf'] = {method: kv.key, ascending: false} as SortingMethod;

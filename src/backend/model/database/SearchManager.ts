@@ -35,6 +35,17 @@ import {GroupSortByTypes, SortByTypes, SortingMethod} from '../../../common/enti
 import {SessionContext} from '../SessionContext';
 import {GalleryManager} from './GalleryManager';
 import * as path from 'path';
+import {Logger} from '../../Logger';
+
+const LOG_TAG = '[SearchManager]';
+
+/**
+ * A content query once the content search service answered:
+ * the matching media, the best match first.
+ */
+interface ResolvedContentSearch extends TextSearch {
+  mediaIds?: number[];
+}
 
 export class SearchManager {
   private DIRECTORY_SELECT = [
@@ -44,6 +55,10 @@ export class SearchManager {
   ];
   // makes all search query params unique, so typeorm won't mix them
   private queryIdBase = 0;
+  // Answers of the content search service, by query text: a search asks for
+  // the media, then the grid, the albums and the covers ask again.
+  private contentCache = new Map<string, { time: number, ids: Promise<number[]> }>();
+  private static readonly CONTENT_CACHE_MS = 5 * 60 * 1000;
 
   public static setSorting<T>(
     query: SelectQueryBuilder<T>,
@@ -386,6 +401,14 @@ export class SearchManager {
 
     result.media = await q.getMany();
 
+    // A content search lists the best match first (SortByTypes.Relevance
+    // keeps this order on the client).
+    const ranking = SearchManager.contentRanking(query);
+    if (ranking) {
+      const rank = new Map(ranking.map((id, i) => [id, i]));
+      result.media.sort((a, b) => (rank.get(a.id) ?? ranking.length) - (rank.get(b.id) ?? ranking.length));
+    }
+
     if (result.media.length > Config.Search.maxMediaResult) {
       result.resultOverflow = true;
     }
@@ -500,6 +523,7 @@ export class SearchManager {
     query = this.assignQueryIDs(query); // assign local ids before flattening SOME_OF queries
     query = this.flattenSameOfQueries(query);
     query = await this.getGPSData(query);
+    query = await this.resolveContentQueries(query);
     query = this.convertMatchTypeToGlob(query);
     return query;
   }
@@ -534,6 +558,22 @@ export class SearchManager {
           );
           return q;
         });
+
+      case SearchQueryTypes.content: {
+        if (directoryOnly) {
+          throw new Error('not supported in directoryOnly mode');
+        }
+        // integers checked in resolveContentQueries: safe to inline, and no
+        // limit on the number of bound SQL variables
+        const ids = (query as ResolvedContentSearch).mediaIds || [];
+        const negate = (query as ResolvedContentSearch).negate === true;
+        return new Brackets((q): unknown => {
+          if (ids.length === 0) {
+            return q.where(negate ? '1 = 1' : '1 = 0');
+          }
+          return q.where(`media.id ${negate ? 'NOT IN' : 'IN'} (${ids.join(',')})`);
+        });
+      }
 
       case SearchQueryTypes.distance:
         if (directoryOnly) {
@@ -1349,6 +1389,85 @@ export class SearchManager {
     }
     // of none of the above, its not a directory search
     return null;
+  }
+
+  /**
+   * Order of a content search result: the media ids of the first content
+   * query that every result has to match (alone, or in an AND), null if none.
+   */
+  public static contentRanking(query: SearchQueryDTO): number[] | null {
+    if (query.type === SearchQueryTypes.content && !(query as ResolvedContentSearch).negate) {
+      return (query as ResolvedContentSearch).mediaIds || null;
+    }
+    if (query.type === SearchQueryTypes.AND) {
+      for (const q of (query as ANDSearchQuery).list) {
+        const r = SearchManager.contentRanking(q);
+        if (r) {
+          return r;
+        }
+      }
+    }
+    return null;
+  }
+
+  private async resolveContentQueries(query: SearchQueryDTO): Promise<SearchQueryDTO> {
+    if ((query as SearchListQuery).list) {
+      for (const q of (query as SearchListQuery).list) {
+        await this.resolveContentQueries(q);
+      }
+    }
+    if (query.type === SearchQueryTypes.content) {
+      (query as ResolvedContentSearch).mediaIds = await this.getContentMatches((query as TextSearch).value || '');
+    }
+    return query;
+  }
+
+  /**
+   * Asks the content search service (Search.contentSearchUrl) for the media
+   * that show the text. Unavailable service: no match (logged), the rest of
+   * the gallery keeps working.
+   */
+  private async getContentMatches(text: string): Promise<number[]> {
+    text = text.trim();
+    if (!text) {
+      return [];
+    }
+    if (!Config.Search.contentSearchUrl) {
+      Logger.warn(LOG_TAG, 'Content search asked but Search.contentSearchUrl is not set');
+      return [];
+    }
+    const now = Date.now();
+    for (const [k, v] of this.contentCache) {
+      if (now - v.time > SearchManager.CONTENT_CACHE_MS) {
+        this.contentCache.delete(k);
+      }
+    }
+    if (!this.contentCache.has(text)) {
+      const entry = {time: now, ids: null as Promise<number[]>};
+      this.contentCache.set(text, entry);
+      entry.ids = (async (): Promise<number[]> => {
+        try {
+          const url = new URL(Config.Search.contentSearchUrl);
+          url.searchParams.set('q', text);
+          const res = await fetch(url, {signal: AbortSignal.timeout(Config.Search.contentSearchTimeout)});
+          if (!res.ok) {
+            throw new Error('HTTP ' + res.status);
+          }
+          const body = (await res.json()) as { ids?: unknown };
+          if (!Array.isArray(body.ids) || !body.ids.every((id) => Number.isInteger(id))) {
+            throw new Error('bad answer, "ids" should be a list of integers');
+          }
+          return body.ids as number[];
+        } catch (err) {
+          Logger.error(LOG_TAG, 'Content search service failed for "' + text + '": ' + err);
+          if (this.contentCache.get(text) === entry) {
+            this.contentCache.delete(text); // tried again next time
+          }
+          return [];
+        }
+      })();
+    }
+    return this.contentCache.get(text).ids;
   }
 
   private async getGPSData(query: SearchQueryDTO): Promise<SearchQueryDTO> {

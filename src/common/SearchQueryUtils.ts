@@ -16,6 +16,22 @@ import {Utils} from './Utils';
 import {TextFold} from './TextFold';
 
 export const SearchQueryUtils = {
+  /**
+   * True if every result matches a content query (alone, or in an AND): the
+   * server then lists the best match first (see SearchManager.contentRanking).
+   */
+  isContentSearch: (query: SearchQueryDTO): boolean => {
+    if (!query) {
+      return false;
+    }
+    if (query.type === SearchQueryTypes.content) {
+      return !(query as TextSearch).negate;
+    }
+    if (query.type === SearchQueryTypes.AND) {
+      return (query as SearchListQuery).list.some(q => SearchQueryUtils.isContentSearch(q));
+    }
+    return false;
+  },
   negate: (query: SearchQueryDTO): SearchQueryDTO => {
     query = Utils.clone(query);
     switch (query.type) {
@@ -42,6 +58,7 @@ export const SearchQueryUtils = {
       case SearchQueryTypes.any_text:
       case SearchQueryTypes.person:
       case SearchQueryTypes.position:
+      case SearchQueryTypes.content:
       case SearchQueryTypes.keyword:
       case SearchQueryTypes.caption:
       case SearchQueryTypes.file_name:

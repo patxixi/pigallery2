@@ -37,6 +37,8 @@ import {ContextUser, SessionContext} from '../../../../../src/backend/model/Sess
 import {UserRoles} from '../../../../../src/common/entities/UserDTO';
 import {UserEntity} from '../../../../../src/backend/model/database/enitites/UserEntity';
 import {SharingEntity} from '../../../../../src/backend/model/database/enitites/SharingEntity';
+import * as http from 'http';
+import {AddressInfo} from 'net';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const deepEqualInAnyOrder = require('deep-equal-in-any-order');
@@ -2177,6 +2179,78 @@ describe('SearchManager', (sqlHelper: DBTestHelper) => {
   });
 
 
+
+  describe('content search', () => {
+    // A stand-in for the content search service: "turtle" shows p2 then p,
+    // "broken" fails.
+    let server: http.Server;
+    let asked: string[];
+    before(async () => {
+      server = http.createServer((req, res) => {
+        const q = new URL(req.url, 'http://localhost').searchParams.get('q');
+        asked.push(q);
+        if (q === 'broken') {
+          res.writeHead(500);
+          res.end();
+          return;
+        }
+        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ids: q === 'turtle' ? [p2.id, p.id] : []}));
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    });
+    after(() => server.close());
+    beforeEach(() => {
+      Config.loadSync();
+      Config.Search.listDirectories = false;
+      Config.Search.listMetafiles = false;
+      Config.Search.contentSearchUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/chercher`;
+      asked = [];
+    });
+    const names = (r: SearchResultDTO) => r.media.map(m => m.name);
+
+    it('should list the media of the service, the best match first', async () => {
+      const sm = new SearchManager();
+      const query = {type: SearchQueryTypes.content, value: 'turtle'} as TextSearch;
+      expect(names(await sm.search(DBTestHelper.defaultSession, query))).to.deep.equal([p2.name, p.name]);
+      expect(await sm.getCount(DBTestHelper.defaultSession, query)).to.equal(2);
+      // the second search of the same text is answered from the cache
+      expect(asked).to.deep.equal(['turtle']);
+    });
+
+    it('should combine with the other queries', async () => {
+      const sm = new SearchManager();
+      let query: SearchQueryDTO = {
+        type: SearchQueryTypes.AND,
+        list: [{type: SearchQueryTypes.content, value: 'turtle'} as TextSearch,
+          {value: p.metadata.caption, type: SearchQueryTypes.caption} as TextSearch]
+      } as ANDSearchQuery;
+      expect(names(await sm.search(DBTestHelper.defaultSession, query))).to.deep.equal([p.name]);
+      query = {type: SearchQueryTypes.content, value: 'turtle', negate: true} as TextSearch;
+      expect(names(await sm.search(DBTestHelper.defaultSession, query))).to.not.include.members([p.name, p2.name]);
+      expect(names(await sm.search(DBTestHelper.defaultSession, query))).to.include(v.name);
+    });
+
+    it('should find nothing when the service fails or is not set', async () => {
+      const sm = new SearchManager();
+      let query = {type: SearchQueryTypes.content, value: 'broken'} as TextSearch;
+      expect(names(await sm.search(DBTestHelper.defaultSession, query))).to.deep.equal([]);
+      expect(names(await sm.search(DBTestHelper.defaultSession, query))).to.deep.equal([]);
+      // a failure is not cached: asked again
+      expect(asked).to.deep.equal(['broken', 'broken']);
+      Config.Search.contentSearchUrl = '';
+      query = {type: SearchQueryTypes.content, value: 'turtle'} as TextSearch;
+      expect(names(await sm.search(DBTestHelper.defaultSession, query))).to.deep.equal([]);
+    });
+
+    it('should give the ranking of a content search only', () => {
+      const c = {type: SearchQueryTypes.content, value: 'turtle', mediaIds: [3, 1]} as TextSearch;
+      expect(SearchManager.contentRanking(c)).to.deep.equal([3, 1]);
+      expect(SearchManager.contentRanking({type: SearchQueryTypes.AND, list: [c]} as ANDSearchQuery)).to.deep.equal([3, 1]);
+      expect(SearchManager.contentRanking({type: SearchQueryTypes.OR, list: [c]} as ORSearchQuery)).to.equal(null);
+      expect(SearchManager.contentRanking({...c, negate: true} as TextSearch)).to.equal(null);
+    });
+  });
 
   describe('Directory allow/block list', () => {
     const dq = (value: string, matchType = TextSearchQueryMatchTypes.exact_match, negate = false): DirectorySearch =>

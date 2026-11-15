@@ -43,6 +43,7 @@ export class GallerySearchComponent implements OnInit, OnDestroy {
     value: '',
   } as TextSearch;
   public rawSearchText = '';
+  public readonly contentSearchEnabled = Config.Search.contentSearchEnabled;
   mouseOverAutoComplete = false;
   readonly SearchQueryTypes: typeof SearchQueryTypes;
   public readonly MetadataSearchQueryTypes: {
@@ -166,6 +167,24 @@ export class GallerySearchComponent implements OnInit, OnDestroy {
         .catch(console.error);
       return;
     }
+    this.router
+      .navigate(['/search', this.HTMLSearchQuery])
+      .catch(console.error);
+  }
+
+  /**
+   * Searches what the photos show: the typed text as one content query
+   * (people, places and the rest are read by the content search service).
+   * Always on the search page, which lists the best match first.
+   */
+  SearchContent(): void {
+    const text = (this.searchQueryDTO.type === SearchQueryTypes.content ?
+      (this.searchQueryDTO as TextSearch).value : this.rawSearchText).trim();
+    if (!text) {
+      return;
+    }
+    this.searchQueryDTO = {type: SearchQueryTypes.content, value: text} as TextSearch;
+    this.rawSearchText = this.searchQueryParserService.stringify(this.searchQueryDTO);
     this.router
       .navigate(['/search', this.HTMLSearchQuery])
       .catch(console.error);

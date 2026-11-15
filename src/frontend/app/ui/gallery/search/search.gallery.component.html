@@ -15,6 +15,11 @@
     <button class="btn btn-tertiary lh-0" type="submit">
       <ng-icon name="ionSearchOutline"></ng-icon>
     </button>
+    <button *ngIf="contentSearchEnabled" class="btn btn-tertiary lh-0" type="button"
+            title="Search what the photos show" i18n-title
+            (click)="SearchContent()">
+      <ng-icon name="ionSparklesOutline"></ng-icon>
+    </button>
     <button class="btn btn-tertiary lh-0"  type="button" (click)="openSearchModal(searchModal)">
       <ng-icon size="1.2em" style="margin-left: -0.1em; margin-right: -0.1em;"
                name="ionChevronDownOutline"></ng-icon>

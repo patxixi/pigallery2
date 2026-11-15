@@ -275,6 +275,15 @@ export class ClientSearchConfig {
     description: $localize`Search also returns with metafiles from directories that contain a media file of the matched search result.`,
   })
   listMetafiles: boolean = true;
+  @ConfigProperty({
+    tags:
+      {
+        name: $localize`Content search`,
+        priority: ConfigPriority.advanced
+      },
+    description: $localize`Shows a button that searches what the photos show (e.g. a turtle, a birthday at the beach). Needs a content search service, see Search.contentSearchUrl.`,
+  })
+  contentSearchEnabled: boolean = false;
 }
 
 @SubConfigClass({tags: {client: true}, softReadonly: true})

@@ -16,6 +16,7 @@ import {
   ClientMetaFileConfig,
   ClientPhotoConfig,
   ClientServiceConfig,
+  ClientSearchConfig,
   ClientSharingConfig,
   ClientSortingConfig,
   ClientUploadConfig,
@@ -717,6 +718,30 @@ export class ServerMetaFileConfig extends ClientMetaFileConfig {
 
 
 @SubConfigClass({softReadonly: true})
+export class ServerSearchConfig extends ClientSearchConfig {
+  @ConfigProperty({
+    tags:
+      {
+        name: $localize`Content search service`,
+        priority: ConfigPriority.underTheHood,
+      } as TAGS,
+    description: $localize`URL of the content search service (e.g. http://127.0.0.1:8766/chercher). It gets the text of a content query as the "q" parameter and answers a JSON object whose "ids" list holds the media ids, the best match first.`
+  })
+  contentSearchUrl: string = '';
+  @ConfigProperty({
+    type: 'unsignedInt',
+    tags:
+      {
+        name: $localize`Content search timeout`,
+        priority: ConfigPriority.underTheHood,
+        unit: 'ms'
+      } as TAGS,
+    description: $localize`The first query after a pause can be slow: the service may load its models.`
+  })
+  contentSearchTimeout: number = 30000;
+}
+
+@SubConfigClass({softReadonly: true})
 export class ServerSharingConfig extends ClientSharingConfig {
   @ConfigProperty({
     type: 'unsignedInt',
@@ -1399,6 +1424,14 @@ export class ServerConfig extends ClientConfig {
     description: $localize`Specify a search query and sorting that the app can use to pick the best photo for an album and folder cover. There is no way to manually pick folder and album cover in the app. You can tag some of your photos with 'cover' and set that as search query or rate them to 5 and set sorting to descending by rating.`
   })
   AlbumCover: ServerAlbumCoverConfig = new ServerAlbumCoverConfig();
+
+  @ConfigProperty({
+    tags: {
+      name: $localize`Search`,
+      uiIcon: 'ionSearchOutline'
+    } as TAGS,
+  })
+  Search: ServerSearchConfig = new ServerSearchConfig();
 
   @ConfigProperty({
     tags: {

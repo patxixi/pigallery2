@@ -14,6 +14,7 @@ import {MediaDTO} from '../../../../../common/entities/MediaDTO';
 import {FileDTO} from '../../../../../common/entities/FileDTO';
 import {Utils} from '../../../../../common/Utils';
 import {ContentLoaderService, DirectoryContent} from '../contentLoader.service';
+import {SearchQueryUtils} from '../../../../../common/SearchQueryUtils';
 
 @Injectable()
 export class GallerySortingService {
@@ -75,6 +76,9 @@ export class GallerySortingService {
       }
     }
     if (cw?.searchResult) {
+      if (SearchQueryUtils.isContentSearch(cw.searchResult.searchQuery)) {
+        return {method: SortByTypes.Relevance, ascending: null};
+      }
       return Config.Gallery.NavBar.SortingGrouping.defaultSearchSortingMethod;
     }
     return Config.Gallery.NavBar.SortingGrouping.defaultPhotoSortingMethod;
@@ -83,6 +87,10 @@ export class GallerySortingService {
 
   getDefaultGrouping(cw: ContentWrapper): GroupingMethod {
     if (cw?.searchResult) {
+      if (SearchQueryUtils.isContentSearch(cw.searchResult.searchQuery)) {
+        // grouping by date would scatter the best matches
+        return {method: GroupByTypes.NoGrouping, ascending: false};
+      }
       return Config.Gallery.NavBar.SortingGrouping.defaultSearchGroupingMethod;
     }
     return Config.Gallery.NavBar.SortingGrouping.defaultPhotoGroupingMethod;
@@ -178,6 +186,13 @@ export class GallerySortingService {
           [media[i], media[j]] = [media[j], media[i]];
         }
         break;
+      case SortByTypes.Relevance:
+        // the order of the server: the best match first
+        return;
+      case GroupByTypes.NoGrouping:
+        // nothing to group by: keep the order (reversing it would turn a
+        // relevance order upside down)
+        return;
     }
     if (!sorting.ascending) {
       media.reverse();

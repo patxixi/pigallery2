@@ -92,15 +92,17 @@
                             </h6>
 
                             <div class="row">
+                                <ng-container *ngFor="let type of sortingByTypes">
                                 <div class="dropdown-item sorting-grouping-item ps-3 pe-3" role="menuitem"
                                      [class.active]="sortingService.sorting.value.method == type.key"
-                                     *ngFor="let type of sortingByTypes"
+                                     *ngIf="isSortingAvailable(type.key)"
                                      (click)="setSortingBy(type.key)">
                                     <div class="me-2 d-inline-block">
                                         <app-sorting-method-icon [method]="type.key"></app-sorting-method-icon>
                                     </div>
                                     <div class="d-inline-block">{{type.key | stringifySorting}}</div>
                                 </div>
+                                </ng-container>
 
                                 <ng-container *ngIf="isDirectionalSort(sortingService.sorting.value.method)">
                                     <hr>
